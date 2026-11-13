@@ -103,7 +103,7 @@ export function PodiumCards({ rows, tvMode = false }: PodiumCardsProps) {
                 {row.competitor.full_name}
               </p>
               {row.competitor.wca_id && (
-                <p className="font-mono text-xs text-slate-400">{row.competitor.wca_id}</p>
+                <p className="text-xs text-slate-400">{row.competitor.wca_id}</p>
               )}
             </div>
 
