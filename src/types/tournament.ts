@@ -8,6 +8,13 @@ export interface SolveSlot {
 export type TournamentStatus = "draft" | "active" | "finished";
 export type RoundStatus = "upcoming" | "active" | "finished";
 
+export interface ScrambleItem {
+  id: number;
+  group: "A" | "B";
+  attempt: number;
+  sequence: string;
+}
+
 export interface Tournament {
   id: string;
   name: string;
@@ -27,6 +34,7 @@ export interface Round {
   status: RoundStatus;
   sort_order: number;
   created_at: string;
+  scrambles?: ScrambleItem[];
 }
 
 export interface Competitor {
@@ -34,7 +42,7 @@ export interface Competitor {
   tournament_id: string;
   bib_number: number;
   full_name: string;
-  wca_id: string | null;
+  club: string | null;
   created_at: string;
 }
 
