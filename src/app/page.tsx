@@ -15,7 +15,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     <LiveScoreboard
       key={snapshot.activeRound?.id ?? "no-round"}
       snapshot={snapshot}
-      tvMode={false}
     />
   );
 }
