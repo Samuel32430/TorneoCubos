@@ -5,20 +5,29 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Calendar,
+  Check,
+  ChevronDown,
+  Edit,
   ExternalLink,
   LogOut,
+  Plus,
+  Trash2,
   Trophy,
   UserCheck,
+  X,
 } from "lucide-react";
 import { CompetitorManager } from "@/components/CompetitorManager";
+import { ConfirmModal, type ModalAction } from "@/components/ConfirmModal";
 import { RoundManager } from "@/components/RoundManager";
 import { SolveInputGrid } from "@/components/SolveInputGrid";
+import { generate10Scrambles } from "@/lib/scrambles";
 import { getSupabaseBrowserClient, hasSupabaseEnv } from "@/lib/supabase/client";
 import type {
   Competitor,
   Round,
   RoundResultRow,
   Tournament,
+  TournamentStatus,
 } from "@/types/tournament";
 
 function buildSlug(name: string, date: string): string {
@@ -29,7 +38,7 @@ function buildSlug(name: string, date: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   const prefix = base || "torneo";
-  return `${prefix}-${date}`;
+  return `${prefix}-${date}-${Date.now().toString().slice(-4)}`;
 }
 
 function getTodayDateString(): string {
@@ -49,6 +58,8 @@ export default function AdminPage() {
   const [loadingTournament, setLoadingTournament] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Lista de todos los torneos disponibles
+  const [allTournaments, setAllTournaments] = useState<Tournament[]>([]);
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
@@ -57,10 +68,22 @@ export default function AdminPage() {
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
   const [selectedCompetitorId, setSelectedCompetitorId] = useState<string | null>(null);
 
+  // Modales de Torneo
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTournamentName, setNewTournamentName] = useState("");
   const [newTournamentDate, setNewTournamentDate] = useState(getTodayDateString);
   const [creatingTournament, setCreatingTournament] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTournamentName, setEditTournamentName] = useState("");
+  const [editTournamentDate, setEditTournamentDate] = useState("");
+  const [editTournamentStatus, setEditTournamentStatus] = useState<TournamentStatus>("active");
+  const [editingTournament, setEditingTournament] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const [showDeleteTournamentModal, setShowDeleteTournamentModal] = useState(false);
+  const [deletingTournament, setDeletingTournament] = useState(false);
 
   const roundFetchSeq = useRef(0);
 
@@ -84,49 +107,25 @@ export default function AdminPage() {
     setResults((data as RoundResultRow[] | null) ?? []);
   }, []);
 
-  const loadLatestTournament = useCallback(async () => {
+  const loadTournamentData = useCallback(async (targetTournament: Tournament) => {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
 
-    setLoadError(null);
+    setTournament(targetTournament);
     setLoadingTournament(true);
-
-    const { data: tournamentsData, error: tournamentError } = await supabase
-      .from("tournaments")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (tournamentError) {
-      setLoadError(`No se pudo cargar el torneo: ${tournamentError.message}`);
-      setLoadingTournament(false);
-      return;
-    }
-
-    const latestTournament = (tournamentsData?.[0] as Tournament | undefined) ?? null;
-    setTournament(latestTournament);
-
-    if (!latestTournament) {
-      setRounds([]);
-      setCompetitors([]);
-      setResults([]);
-      setSelectedRoundId(null);
-      setSelectedCompetitorId(null);
-      setLoadingTournament(false);
-      return;
-    }
+    setLoadError(null);
 
     const [roundsRes, competitorsRes] = await Promise.all([
       supabase
         .from("rounds")
         .select("*")
-        .eq("tournament_id", latestTournament.id)
+        .eq("tournament_id", targetTournament.id)
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true }),
       supabase
         .from("competitors")
         .select("*")
-        .eq("tournament_id", latestTournament.id)
+        .eq("tournament_id", targetTournament.id)
         .order("bib_number", { ascending: true }),
     ]);
 
@@ -160,6 +159,43 @@ export default function AdminPage() {
     setLoadingTournament(false);
   }, [loadRoundResults]);
 
+  const loadTournaments = useCallback(async () => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    setLoadError(null);
+    setLoadingTournament(true);
+
+    const { data: tournamentsData, error: tournamentError } = await supabase
+      .from("tournaments")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (tournamentError) {
+      setLoadError(`No se pudieron cargar los torneos: ${tournamentError.message}`);
+      setLoadingTournament(false);
+      return;
+    }
+
+    const list = (tournamentsData as Tournament[] | null) ?? [];
+    setAllTournaments(list);
+
+    if (list.length === 0) {
+      setTournament(null);
+      setRounds([]);
+      setCompetitors([]);
+      setResults([]);
+      setSelectedRoundId(null);
+      setSelectedCompetitorId(null);
+      setLoadingTournament(false);
+      return;
+    }
+
+    // Seleccionar el torneo activo o el primero en la lista
+    const active = list.find((t) => t.status === "active") ?? list[0];
+    await loadTournamentData(active);
+  }, [loadTournamentData]);
+
   useEffect(() => {
     if (!envConfigured) {
       router.replace("/login");
@@ -183,7 +219,7 @@ export default function AdminPage() {
 
       setUserEmail(data.session.user.email ?? null);
       setAuthReady(true);
-      void loadLatestTournament();
+      void loadTournaments();
     });
 
     const {
@@ -198,7 +234,7 @@ export default function AdminPage() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [envConfigured, loadLatestTournament, router]);
+  }, [envConfigured, loadTournaments, router]);
 
   async function handleSignOut() {
     const supabase = getSupabaseBrowserClient();
@@ -207,6 +243,7 @@ export default function AdminPage() {
     router.replace("/login");
   }
 
+  // Crear nuevo torneo
   async function handleCreateTournament(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const supabase = getSupabaseBrowserClient();
@@ -240,6 +277,9 @@ export default function AdminPage() {
       return;
     }
 
+    // Generar scrambles WCA para la ronda inicial
+    const initialScrambles = generate10Scrambles("333");
+
     const { data: createdRound, error: roundError } = await supabase
       .from("rounds")
       .insert({
@@ -250,6 +290,7 @@ export default function AdminPage() {
         name: "Ronda 1",
         status: "active",
         sort_order: 1,
+        scrambles: initialScrambles,
       })
       .select("*")
       .single();
@@ -263,12 +304,100 @@ export default function AdminPage() {
     const typedTournament = createdTournament as Tournament;
     const typedRound = (createdRound as Round | null) ?? null;
 
+    setAllTournaments((prev) => [typedTournament, ...prev]);
     setTournament(typedTournament);
     setRounds(typedRound ? [typedRound] : []);
     setSelectedRoundId(typedRound?.id ?? null);
     setCompetitors([]);
     setResults([]);
     setSelectedCompetitorId(null);
+    setShowCreateModal(false);
+    setNewTournamentName("");
+  }
+
+  // Abrir modal de edición
+  function handleOpenEditModal() {
+    if (!tournament) return;
+    setEditTournamentName(tournament.name);
+    setEditTournamentDate(tournament.event_date);
+    setEditTournamentStatus(tournament.status);
+    setEditError(null);
+    setShowEditModal(true);
+  }
+
+  // Guardar edición del torneo
+  async function handleSaveTournamentEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!tournament) return;
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    const trimmedName = editTournamentName.trim();
+    if (!trimmedName) {
+      setEditError("El nombre no puede estar vacío.");
+      return;
+    }
+
+    setEditingTournament(true);
+    setEditError(null);
+
+    const { data, error } = await supabase
+      .from("tournaments")
+      .update({
+        name: trimmedName,
+        event_date: editTournamentDate,
+        status: editTournamentStatus,
+      })
+      .eq("id", tournament.id)
+      .select("*")
+      .single();
+
+    setEditingTournament(false);
+
+    if (error || !data) {
+      setEditError(`Error al actualizar: ${error?.message ?? "Error desconocido"}`);
+      return;
+    }
+
+    const updated = data as Tournament;
+    setTournament(updated);
+    setAllTournaments((prev) =>
+      prev.map((t) => (t.id === updated.id ? updated : t))
+    );
+    setShowEditModal(false);
+  }
+
+  // Eliminar torneo actual
+  async function handleConfirmDeleteTournament() {
+    if (!tournament) return;
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    setDeletingTournament(true);
+    const { error } = await supabase
+      .from("tournaments")
+      .delete()
+      .eq("id", tournament.id);
+
+    setDeletingTournament(false);
+    setShowDeleteTournamentModal(false);
+
+    if (error) {
+      setLoadError(`No se pudo eliminar el torneo: ${error.message}`);
+      return;
+    }
+
+    const remaining = allTournaments.filter((t) => t.id !== tournament.id);
+    setAllTournaments(remaining);
+
+    if (remaining.length > 0) {
+      void loadTournamentData(remaining[0]);
+    } else {
+      setTournament(null);
+      setRounds([]);
+      setCompetitors([]);
+      setResults([]);
+    }
   }
 
   function handleSelectRound(roundId: string) {
@@ -290,6 +419,22 @@ export default function AdminPage() {
     setRounds((prev) =>
       prev.map((round) => (round.id === updated.id ? updated : round))
     );
+  }
+
+  function handleRoundDeleted(roundId: string) {
+    setRounds((prev) => {
+      const next = prev.filter((r) => r.id !== roundId);
+      if (selectedRoundId === roundId) {
+        const nextSelected = next[0]?.id ?? null;
+        setSelectedRoundId(nextSelected);
+        if (nextSelected) {
+          void loadRoundResults(nextSelected);
+        } else {
+          setResults([]);
+        }
+      }
+      return next;
+    });
   }
 
   function handleCompetitorAdded(competitor: Competitor) {
@@ -349,46 +494,65 @@ export default function AdminPage() {
     );
   }, [results, selectedCompetitor]);
 
+  const deleteTournamentActions: ModalAction[] = [
+    {
+      label: "Cancelar",
+      variant: "secondary",
+      onClick: () => setShowDeleteTournamentModal(false),
+      disabled: deletingTournament,
+    },
+    {
+      label: "Eliminar torneo completo",
+      variant: "danger",
+      onClick: handleConfirmDeleteTournament,
+      disabled: deletingTournament,
+    },
+  ];
+
   if (!authReady || loadingTournament) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <p className="text-sm text-slate-500">Cargando panel de jueces...</p>
+      <main className="min-h-screen flex items-center justify-center bg-[#F1F5F9] px-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-[#CBD5E1] bg-white p-6 shadow-sm">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#0F172A] border-t-transparent" />
+          <p className="text-sm font-semibold text-[#0F172A]">Cargando panel de jueces...</p>
+        </div>
       </main>
     );
   }
 
+  // Si no hay ningún torneo creado en la base de datos
   if (!tournament) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-10">
+      <main className="min-h-screen bg-[#F1F5F9] px-4 py-10">
         <div className="mx-auto max-w-lg">
           <div className="mb-6 flex items-center justify-between">
             <Link
               href="/"
-              className="text-sm font-medium text-slate-600 hover:text-slate-900"
+              className="text-sm font-semibold text-[#64748B] hover:text-[#0F172A]"
             >
-              ← Marcador en vivo
+              ← Marcador en vivo (/)
             </Link>
             <button
               type="button"
               onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-3.5 py-1.5 text-sm font-semibold text-[#0F172A] hover:bg-slate-100"
             >
               <LogOut className="h-4 w-4" />
               Cerrar sesión
             </button>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-[#CBD5E1] bg-white p-8 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white">
-                <Trophy className="h-5 w-5" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F172A] text-[#F59E0B]">
+                <Trophy className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-slate-900">
+                <h1 className="text-xl font-bold text-[#0F172A]">
                   Crear torneo inicial
                 </h1>
-                <p className="text-sm text-slate-500">
-                  Se creará automáticamente la primera ronda de 3x3x3 Cube.
+                <p className="text-xs text-[#64748B]">
+                  Se generará automáticamente la primera ronda con 10 mezclas WCA.
                 </p>
               </div>
             </div>
@@ -397,7 +561,7 @@ export default function AdminPage() {
               <div>
                 <label
                   htmlFor="tournament-name"
-                  className="block text-sm font-medium text-slate-700"
+                  className="block text-xs font-semibold text-[#64748B]"
                 >
                   Nombre del torneo
                 </label>
@@ -408,16 +572,16 @@ export default function AdminPage() {
                   value={newTournamentName}
                   onChange={(e) => setNewTournamentName(e.target.value)}
                   placeholder="Ej. Torneo Cubo Primavera 2026"
-                  className="mt-1.5 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  className="mt-1.5 block w-full rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A] focus:border-[#0F172A] focus:outline-none"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="tournament-date"
-                  className="block text-sm font-medium text-slate-700"
+                  className="block text-xs font-semibold text-[#64748B]"
                 >
-                  Fecha
+                  Fecha del evento
                 </label>
                 <input
                   id="tournament-date"
@@ -425,12 +589,12 @@ export default function AdminPage() {
                   required
                   value={newTournamentDate}
                   onChange={(e) => setNewTournamentDate(e.target.value)}
-                  className="mt-1.5 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  className="mt-1.5 block w-full rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A] focus:border-[#0F172A] focus:outline-none"
                 />
               </div>
 
               {createError && (
-                <p role="alert" className="text-sm text-red-600">
+                <p role="alert" className="text-xs font-semibold text-[#EF4444]">
                   {createError}
                 </p>
               )}
@@ -438,7 +602,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={creatingTournament}
-                className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                className="w-full rounded-xl bg-[#0F172A] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-800 disabled:opacity-60 shadow-xs"
               >
                 {creatingTournament ? "Creando torneo..." : "Crear torneo y empezar"}
               </button>
@@ -450,40 +614,88 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-lg font-bold text-slate-900 sm:text-xl">
-                {tournament.name}
-              </h1>
-              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                Panel de Jueces
-              </span>
+    <div className="min-h-screen bg-[#F1F5F9]">
+      <header className="border-b border-[#CBD5E1] bg-white shadow-xs">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          {/* Selector y Gestión de Torneos */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0F172A] text-[#F59E0B]">
+                <Trophy className="h-5 w-5" />
+              </div>
+
+              <div className="relative">
+                <select
+                  value={tournament.id}
+                  onChange={(e) => {
+                    const picked = allTournaments.find((t) => t.id === e.target.value);
+                    if (picked) void loadTournamentData(picked);
+                  }}
+                  className="rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] py-1.5 pl-3 pr-8 text-sm font-bold text-[#0F172A] hover:bg-white focus:border-[#0F172A] focus:outline-none"
+                >
+                  {allTournaments.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.event_date})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-              <span className="inline-flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" />
-                {tournament.event_date}
-              </span>
-              {userEmail && <span>Sesión: {userEmail}</span>}
+
+            {/* Botones de acción del torneo */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleOpenEditModal}
+                title="Editar datos del torneo"
+                className="inline-flex items-center gap-1 rounded-xl border border-[#CBD5E1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+              >
+                <Edit className="h-3.5 w-3.5" />
+                Editar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setNewTournamentName("");
+                  setNewTournamentDate(getTodayDateString());
+                  setCreateError(null);
+                  setShowCreateModal(true);
+                }}
+                title="Crear un nuevo torneo"
+                className="inline-flex items-center gap-1 rounded-xl border border-[#CBD5E1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC]"
+              >
+                <Plus className="h-3.5 w-3.5 text-[#F59E0B]" />
+                Nuevo Torneo
+              </button>
+
+              {allTournaments.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteTournamentModal(true)}
+                  title="Eliminar este torneo"
+                  className="inline-flex items-center gap-1 rounded-xl border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#EF4444] hover:bg-red-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           </div>
 
+          {/* Navegación y Sesión */}
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-3 py-1.5 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-[#F8FAFC]"
             >
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-4 w-4 text-[#F59E0B]" />
               Marcador en vivo (/)
             </Link>
 
             <button
               type="button"
               onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:border-red-200 hover:text-red-700"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-3 py-1.5 text-sm font-semibold text-[#64748B] transition-colors hover:bg-red-50 hover:border-red-200 hover:text-[#EF4444]"
             >
               <LogOut className="h-4 w-4" />
               Cerrar sesión
@@ -496,7 +708,7 @@ export default function AdminPage() {
         {loadError && (
           <div
             role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-[#EF4444]"
           >
             {loadError}
           </div>
@@ -509,6 +721,7 @@ export default function AdminPage() {
           onSelectRound={handleSelectRound}
           onRoundCreated={handleRoundCreated}
           onRoundUpdated={handleRoundUpdated}
+          onRoundDeleted={handleRoundDeleted}
         />
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[400px_1fr]">
@@ -528,21 +741,21 @@ export default function AdminPage() {
 
           <div>
             {!activeRound ? (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-                <p className="text-sm font-medium text-slate-700">
+              <div className="rounded-2xl border border-dashed border-[#CBD5E1] bg-white p-10 text-center">
+                <p className="text-sm font-semibold text-[#0F172A]">
                   No hay ninguna ronda seleccionada.
                 </p>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-xs text-[#64748B]">
                   Crea o selecciona una ronda arriba para comenzar a capturar tiempos.
                 </p>
               </div>
             ) : !selectedCompetitor ? (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-                <UserCheck className="mx-auto h-8 w-8 text-slate-400" />
-                <p className="mt-2 text-sm font-medium text-slate-700">
+              <div className="rounded-2xl border border-dashed border-[#CBD5E1] bg-white p-10 text-center">
+                <UserCheck className="mx-auto h-8 w-8 text-[#64748B]" />
+                <p className="mt-2 text-sm font-semibold text-[#0F172A]">
                   Selecciona un competidor para capturar sus 5 intentos
                 </p>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-xs text-[#64748B]">
                   Registra un competidor en el panel izquierdo o haz clic en alguno de la lista.
                 </p>
               </div>
@@ -558,6 +771,170 @@ export default function AdminPage() {
           </div>
         </div>
       </main>
+
+      {/* Modal: Crear Nuevo Torneo */}
+      {showCreateModal && (
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div onClick={() => setShowCreateModal(false)} className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" />
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-[#CBD5E1] bg-white p-6 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setShowCreateModal(false)}
+              className="absolute right-4 top-4 rounded-lg p-1 text-[#64748B] hover:bg-slate-100"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-base font-bold text-[#0F172A]">Crear nuevo torneo</h3>
+            <p className="mt-1 text-xs text-[#64748B]">
+              Se creará el torneo y se incluirá automáticamente la primera ronda con mezclas oficiales.
+            </p>
+
+            <form onSubmit={handleCreateTournament} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-[#64748B]">Nombre del torneo</label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={newTournamentName}
+                  onChange={(e) => setNewTournamentName(e.target.value)}
+                  placeholder="Ej. Torneo Invierno 2026"
+                  className="mt-1 block w-full rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A] focus:border-[#0F172A] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#64748B]">Fecha del evento</label>
+                <input
+                  type="date"
+                  required
+                  value={newTournamentDate}
+                  onChange={(e) => setNewTournamentDate(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A] focus:border-[#0F172A] focus:outline-none"
+                />
+              </div>
+
+              {createError && (
+                <p className="text-xs font-semibold text-[#EF4444]">{createError}</p>
+              )}
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="rounded-xl border border-[#CBD5E1] bg-white px-4 py-2 text-sm font-semibold text-[#64748B] hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingTournament}
+                  className="rounded-xl bg-[#0F172A] px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60"
+                >
+                  {creatingTournament ? "Creando..." : "Crear torneo"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Editar Torneo Actual */}
+      {showEditModal && tournament && (
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div onClick={() => setShowEditModal(false)} className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" />
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-[#CBD5E1] bg-white p-6 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setShowEditModal(false)}
+              className="absolute right-4 top-4 rounded-lg p-1 text-[#64748B] hover:bg-slate-100"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-base font-bold text-[#0F172A]">Editar torneo</h3>
+            <p className="mt-1 text-xs text-[#64748B]">
+              Actualiza el nombre, la fecha o el estado de este torneo.
+            </p>
+
+            <form onSubmit={handleSaveTournamentEdit} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-[#64748B]">Nombre del torneo</label>
+                <input
+                  type="text"
+                  required
+                  value={editTournamentName}
+                  onChange={(e) => setEditTournamentName(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A] focus:border-[#0F172A] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#64748B]">Fecha del evento</label>
+                <input
+                  type="date"
+                  required
+                  value={editTournamentDate}
+                  onChange={(e) => setEditTournamentDate(e.target.value)}
+                  className="mt-1 block w-full rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A] focus:border-[#0F172A] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#64748B]">Estado del torneo</label>
+                <select
+                  value={editTournamentStatus}
+                  onChange={(e) => setEditTournamentStatus(e.target.value as TournamentStatus)}
+                  className="mt-1 block w-full rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A] focus:border-[#0F172A] focus:outline-none"
+                >
+                  <option value="active">Activo (En curso)</option>
+                  <option value="finished">Finalizado</option>
+                  <option value="draft">Borrador</option>
+                </select>
+              </div>
+
+              {editError && (
+                <p className="text-xs font-semibold text-[#EF4444]">{editError}</p>
+              )}
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="rounded-xl border border-[#CBD5E1] bg-white px-4 py-2 text-sm font-semibold text-[#64748B] hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={editingTournament}
+                  className="rounded-xl bg-[#0F172A] px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60"
+                >
+                  {editingTournament ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirmar Eliminación de Torneo */}
+      <ConfirmModal
+        isOpen={showDeleteTournamentModal}
+        title="Eliminar torneo completo"
+        description={
+          tournament ? (
+            <p>
+              ¿Estás seguro de que deseas eliminar permanentemente el torneo{" "}
+              <strong className="text-[#0F172A]">{tournament.name}</strong>? Se borrarán todas sus rondas, competidores y tiempos registrados.
+            </p>
+          ) : null
+        }
+        icon="danger"
+        actions={deleteTournamentActions}
+        onClose={() => setShowDeleteTournamentModal(false)}
+      />
     </div>
   );
 }
