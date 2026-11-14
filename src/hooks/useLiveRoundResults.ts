@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient, hasSupabaseEnv } from "@/lib/supabase/client";
 import { normalizeSolves } from "@/lib/wca";
-import type { Competitor, Round, RoundResultRow } from "@/types/tournament";
+import type { Competitor, Round, RoundResultRow, Tournament } from "@/types/tournament";
 
 export type ConnectionStatus = "connecting" | "live" | "offline";
 
 export interface UseLiveRoundResultsParams {
   tournamentId: string | null;
+  initialTournament?: Tournament | null;
   initialRound: Round | null;
   initialRounds: Round[];
   initialCompetitors: Competitor[];
@@ -17,6 +18,7 @@ export interface UseLiveRoundResultsParams {
 }
 
 export interface UseLiveRoundResultsReturn {
+  tournament: Tournament | null;
   rounds: Round[];
   activeRound: Round | null;
   setActiveRoundId: (roundId: string) => void;
@@ -58,11 +60,13 @@ function removeById<T extends { id: string }>(list: T[], id: string | undefined)
 
 export function useLiveRoundResults({
   tournamentId,
+  initialTournament,
   initialRound,
   initialRounds,
   initialCompetitors,
   initialResults,
 }: UseLiveRoundResultsParams): UseLiveRoundResultsReturn {
+  const [tournament, setTournament] = useState<Tournament | null>(() => initialTournament ?? null);
   const [rounds, setRounds] = useState<Round[]>(() => sortRounds(initialRounds));
   const [activeRoundId, setActiveRoundId] = useState<string | null>(
     () => initialRound?.id ?? initialRounds[0]?.id ?? null
@@ -79,6 +83,12 @@ export function useLiveRoundResults({
   const [lastUpdatedCompetitorId, setLastUpdatedCompetitorId] = useState<string | null>(
     null
   );
+
+  useEffect(() => {
+    if (initialTournament) {
+      setTournament(initialTournament);
+    }
+  }, [initialTournament]);
 
   const loadedRoundIdRef = useRef<string | null>(initialRound?.id ?? null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -147,6 +157,24 @@ export function useLiveRoundResults({
     );
 
     channel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tournaments",
+          filter: `id=eq.${tournamentId}`,
+        },
+        (payload: RealtimePostgresChangesPayload<Tournament>) => {
+          if (cancelled) return;
+          if (payload.eventType === "DELETE") {
+            setTournament(null);
+            return;
+          }
+          const updated = payload.new as Tournament;
+          setTournament(updated);
+        }
+      )
       .on(
         "postgres_changes",
         {
@@ -254,6 +282,7 @@ export function useLiveRoundResults({
   }, [resolvedRoundId]);
 
   return {
+    tournament,
     rounds,
     activeRound,
     setActiveRoundId: selectRound,
