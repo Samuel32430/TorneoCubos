@@ -298,7 +298,7 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por nombre, #bib o club..."
+              placeholder="Buscar por nombre o club..."
               className={`w-full rounded-xl border py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 ${
                 isDark
                   ? "border-[#1E293B] bg-[#111827] text-[#F8FAFC] placeholder:text-[#94A3B8] focus:border-[#F59E0B] focus:ring-[#F59E0B]"
@@ -489,19 +489,16 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
                           </td>
 
                           <td className="px-3 py-3 sm:px-4">
-                            <div className="flex items-baseline gap-2">
+                            <div className="min-w-0">
                               <span className={`font-semibold ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
                                 {row.competitor.full_name}
                               </span>
-                              <span className="font-mono text-xs text-slate-400 tabular-nums">
-                                #{row.competitor.bib_number}
-                              </span>
+                              {row.competitor.club && (
+                                <span className={`block text-xs font-medium ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+                                  {row.competitor.club}
+                                </span>
+                              )}
                             </div>
-                            {row.competitor.club && (
-                              <span className={`block text-xs font-medium ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
-                                {row.competitor.club}
-                              </span>
-                            )}
                           </td>
 
                           {solves.map((slot, idx) => {
@@ -551,15 +548,12 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
                 </table>
               </div>
 
-              <div className={`border-t px-4 py-3 text-xs flex flex-wrap items-center justify-between gap-2 ${
+              <div className={`border-t px-4 py-3 text-xs ${
                 isDark ? "border-[#1E293B] bg-[#090D16]/40 text-[#94A3B8]" : "border-[#CBD5E1] bg-[#F8FAFC] text-[#64748B]"
               }`}>
-                <span>
+                <p>
                   * Los tiempos entre paréntesis () indican los extremos descartados (mejor y peor intento) para el cálculo del promedio Ao5.
-                </span>
-                <span>
-                  WCA Regulations Art. 9f
-                </span>
+                </p>
               </div>
             </>
           )}

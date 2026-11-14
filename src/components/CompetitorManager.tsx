@@ -354,7 +354,7 @@ export function CompetitorManager({
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por #bib, nombre o club..."
+              placeholder="Buscar por nombre o club..."
               className="block w-full rounded-xl border border-[#CBD5E1] bg-white py-1.5 pl-9 pr-3 text-sm text-[#0F172A] placeholder:text-[#64748B]/60 focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A] focus:outline-none"
             />
           </div>

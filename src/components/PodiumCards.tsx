@@ -117,7 +117,7 @@ export function PodiumCards({ rows, isDark = true }: PodiumCardsProps) {
               </span>
 
               <span className={`font-mono text-xs tabular-nums ${isDark ? "text-slate-500" : "text-[#64748B]"}`}>
-                {isFinished ? `#${row.competitor.bib_number}` : `${result.completed_count}/5`}
+                {result.completed_count}/5
               </span>
             </div>
 

@@ -530,7 +530,7 @@ export default function AdminPage() {
               href="/"
               className="text-sm font-semibold text-[#64748B] hover:text-[#0F172A]"
             >
-              ← Marcador en vivo (/)
+              ← Marcador en vivo
             </Link>
             <button
               type="button"
@@ -689,7 +689,7 @@ export default function AdminPage() {
               className="inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-3 py-1.5 text-sm font-semibold text-[#0F172A] transition-colors hover:bg-[#F8FAFC]"
             >
               <ExternalLink className="h-4 w-4 text-[#F59E0B]" />
-              Marcador en vivo (/)
+              Marcador en vivo
             </Link>
 
             <button
