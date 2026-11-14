@@ -257,7 +257,13 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
         <header className={`rounded-2xl border px-5 py-4 shadow-sm transition-colors ${isDark ? "border-[#1E293B] bg-[#111827]" : "border-[#CBD5E1] bg-white"}`}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] p-1.5 shadow-xs ring-1 ring-white/10 overflow-hidden">
+              <div
+                className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl p-1 transition-colors overflow-hidden ${
+                  isDark
+                    ? "bg-[#0F172A] ring-1 ring-white/10 shadow-xs"
+                    : "bg-transparent ring-0 shadow-none"
+                }`}
+              >
                 <Image
                   src="/conquis-logo.png"
                   alt="Club Conquistadores"

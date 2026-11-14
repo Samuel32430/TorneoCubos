@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Calendar,
   CheckCircle2,
   Clock,
   Layers,
@@ -81,65 +80,10 @@ function formatFullEventDate(dateValue: string): string {
   }
 }
 
-function ConnectionBadge({
-  status,
-  isDark,
-}: {
-  status: ConnectionStatus;
-  isDark: boolean;
-}) {
-  if (status === "live") {
-    return (
-      <span
-        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
-          isDark
-            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-            : "border-emerald-200 bg-emerald-50 text-emerald-700"
-        }`}
-      >
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-        </span>
-        En espera activa
-      </span>
-    );
-  }
-
-  if (status === "connecting") {
-    return (
-      <span
-        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
-          isDark
-            ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-            : "border-amber-200 bg-amber-50 text-[#B45309]"
-        }`}
-      >
-        <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
-        Conectando
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
-        isDark
-          ? "border-slate-700 bg-slate-800/80 text-slate-400"
-          : "border-[#CBD5E1] bg-slate-100 text-[#64748B]"
-      }`}
-    >
-      <span className="h-2 w-2 rounded-full bg-slate-400" />
-      Sin conexión
-    </span>
-  );
-}
-
 export function UpcomingTournamentView({
   tournament,
   rounds,
   competitors,
-  connectionStatus,
   isDark,
   toggleTheme,
 }: UpcomingTournamentViewProps) {
@@ -186,7 +130,13 @@ export function UpcomingTournamentView({
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] p-1.5 shadow-xs ring-1 ring-white/10 overflow-hidden">
+              <div
+                className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl p-1 transition-colors overflow-hidden ${
+                  isDark
+                    ? "bg-[#0F172A] ring-1 ring-white/10 shadow-xs"
+                    : "bg-transparent ring-0 shadow-none"
+                }`}
+              >
                 <Image
                   src="/conquis-logo.png"
                   alt="Club Conquistadores"
@@ -220,9 +170,7 @@ export function UpcomingTournamentView({
               </div>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-end gap-2.5">
-              <ConnectionBadge status={connectionStatus} isDark={isDark} />
-
+            <div className="flex items-center justify-end">
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -265,8 +213,7 @@ export function UpcomingTournamentView({
           <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-amber-500/10 blur-3xl" />
 
           <div className="relative text-center">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-[#F59E0B]">
-              <Calendar className="h-3.5 w-3.5" />
+            <div className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-[#F59E0B]">
               Fecha y Hora Oficial
             </div>
 
@@ -284,7 +231,7 @@ export function UpcomingTournamentView({
                 isDark ? "text-[#94A3B8]" : "text-[#64748B]"
               }`}
             >
-              📅 {formatFullEventDate(tournament.event_date)} · 09:00 AM (Aprox)
+              {formatFullEventDate(tournament.event_date)} · 09:00 AM (Aprox)
             </p>
 
             {/* Contador de 4 Bloques (Días, Horas, Minutos, Segundos) */}

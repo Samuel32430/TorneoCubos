@@ -590,7 +590,7 @@ export default function AdminPage() {
 
           <div className="rounded-2xl border border-[#CBD5E1] bg-white p-8 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] p-1.5 shadow-xs ring-1 ring-white/10 overflow-hidden">
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl p-0.5 overflow-hidden">
                 <Image
                   src="/conquis-logo.png"
                   alt="Club Conquistadores"
@@ -672,7 +672,7 @@ export default function AdminPage() {
           {/* Selector y Gestión de Torneos */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] p-1 shadow-xs ring-1 ring-white/10 overflow-hidden">
+              <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl p-0.5 overflow-hidden">
                 <Image
                   src="/conquis-logo.png"
                   alt="Club Conquistadores"
