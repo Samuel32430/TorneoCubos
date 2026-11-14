@@ -4,9 +4,10 @@ import type { LeaderboardRow } from "@/types/tournament";
 
 interface PodiumCardsProps {
   rows: LeaderboardRow[];
+  isDark?: boolean;
 }
 
-const PODIUM_STYLES = [
+const PODIUM_STYLES_DARK = [
   {
     placeLabel: "1.º",
     cardBorder: "border-t-2 border-t-[#FACC15]",
@@ -27,11 +28,32 @@ const PODIUM_STYLES = [
   },
 ] as const;
 
+const PODIUM_STYLES_LIGHT = [
+  {
+    placeLabel: "1.º",
+    cardBorder: "border-t-4 border-t-[#F59E0B]",
+    badgeClass: "bg-amber-50 text-[#B45309] border-amber-200",
+    iconClass: "text-[#F59E0B]",
+  },
+  {
+    placeLabel: "2.º",
+    cardBorder: "border-t-4 border-t-slate-400",
+    badgeClass: "bg-slate-100 text-slate-700 border-slate-300",
+    iconClass: "text-slate-500",
+  },
+  {
+    placeLabel: "3.º",
+    cardBorder: "border-t-4 border-t-[#EA580C]",
+    badgeClass: "bg-orange-50 text-[#EA580C] border-orange-200",
+    iconClass: "text-[#EA580C]",
+  },
+] as const;
+
 function hasValidTime(cs: number | null | undefined): cs is number {
   return cs !== null && cs !== undefined && cs >= 0;
 }
 
-export function PodiumCards({ rows }: PodiumCardsProps) {
+export function PodiumCards({ rows, isDark = true }: PodiumCardsProps) {
   const contenders = rows
     .filter((row) => {
       if (!row.result || row.result.completed_count === 0) return false;
@@ -41,10 +63,12 @@ export function PodiumCards({ rows }: PodiumCardsProps) {
 
   if (contenders.length === 0) return null;
 
+  const styleList = isDark ? PODIUM_STYLES_DARK : PODIUM_STYLES_LIGHT;
+
   return (
     <section aria-label="Podio provisional" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {contenders.map((row, index) => {
-        const style = PODIUM_STYLES[index] ?? PODIUM_STYLES[2];
+        const style = styleList[index] ?? styleList[2];
         const result = row.result!;
         const hasValidAverage = hasValidTime(result.average_cs);
         const isFinished = result.completed_count >= 5;
@@ -74,7 +98,11 @@ export function PodiumCards({ rows }: PodiumCardsProps) {
         return (
           <div
             key={row.competitor.id}
-            className={`rounded-2xl border border-[#1E293B] bg-[#111827] p-4 shadow-lg ${style.cardBorder}`}
+            className={`rounded-2xl border p-4 shadow-sm transition-colors ${style.cardBorder} ${
+              isDark
+                ? "border-[#1E293B] bg-[#111827]"
+                : "border-[#CBD5E1] bg-white"
+            }`}
           >
             <div className="flex items-center justify-between gap-2">
               <span
@@ -88,35 +116,41 @@ export function PodiumCards({ rows }: PodiumCardsProps) {
                 {placeText}
               </span>
 
-              <span className="font-mono text-xs text-slate-500 tabular-nums">
+              <span className={`font-mono text-xs tabular-nums ${isDark ? "text-slate-500" : "text-[#64748B]"}`}>
                 {isFinished ? `#${row.competitor.bib_number}` : `${result.completed_count}/5`}
               </span>
             </div>
 
             <div className="mt-2.5">
-              <p className="truncate font-semibold text-[#F8FAFC] text-base">
+              <p className={`truncate font-semibold text-base ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
                 {row.competitor.full_name}
               </p>
               {row.competitor.club && (
-                <p className="text-xs text-[#94A3B8] font-medium">{row.competitor.club}</p>
+                <p className={`text-xs font-medium ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+                  {row.competitor.club}
+                </p>
               )}
             </div>
 
-            <div className="mt-3 flex items-baseline justify-between border-t border-[#1E293B] pt-2.5">
+            <div
+              className={`mt-3 flex items-baseline justify-between border-t pt-2.5 ${
+                isDark ? "border-[#1E293B]" : "border-[#CBD5E1]"
+              }`}
+            >
               <div>
-                <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                <span className={`block text-[11px] font-medium uppercase tracking-wide ${isDark ? "text-slate-400" : "text-[#64748B]"}`}>
                   {mainLabel}
                 </span>
-                <span className="font-mono font-bold tabular-nums text-[#F8FAFC] text-xl">
+                <span className={`font-mono font-bold tabular-nums text-xl ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
                   {mainValue}
                 </span>
               </div>
 
               <div className="text-right">
-                <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                <span className={`block text-[11px] font-medium uppercase tracking-wide ${isDark ? "text-slate-400" : "text-[#64748B]"}`}>
                   Mejor
                 </span>
-                <span className="font-mono font-semibold tabular-nums text-slate-300 text-sm">
+                <span className={`font-mono font-semibold tabular-nums text-sm ${isDark ? "text-slate-300" : "text-[#0F172A]"}`}>
                   {bestValue}
                 </span>
               </div>
