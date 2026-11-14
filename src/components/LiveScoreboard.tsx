@@ -231,7 +231,7 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
   const isRoundFinished = activeRound?.status === "finished";
 
   return (
-    <div className={`min-h-screen transition-colors duration-150 ${isDark ? "bg-[#090D16] text-[#F8FAFC]" : "bg-[#F1F5F9] text-[#0F172A]"}`}>
+    <main className={`min-h-screen transition-colors duration-150 ${isDark ? "bg-[#090D16] text-[#F8FAFC]" : "bg-[#F1F5F9] text-[#0F172A]"}`}>
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 space-y-5">
         {/* Cabecera oficial del torneo con selector de tema */}
         <header className={`rounded-2xl border px-5 py-4 shadow-sm transition-colors ${isDark ? "border-[#1E293B] bg-[#111827]" : "border-[#CBD5E1] bg-white"}`}>
@@ -256,6 +256,7 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
               <button
                 type="button"
                 onClick={toggleTheme}
+                aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
                 title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
                 className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
                   isDark
@@ -312,6 +313,7 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
             <button
               type="button"
               onClick={() => setShowScrambles((prev) => !prev)}
+              aria-label={showScrambles ? "Ocultar mezclas oficiales" : "Ver mezclas oficiales"}
               className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-colors ${
                 isDark
                   ? "border-[#1E293B] bg-[#111827] text-[#94A3B8] hover:border-slate-700 hover:text-[#F8FAFC]"
@@ -559,6 +561,6 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
           )}
         </section>
       </div>
-    </div>
+    </main>
   );
 }

@@ -99,6 +99,7 @@ export function RoundSelector({
             type="button"
             role="tab"
             aria-selected={isActive}
+            aria-label={`Ver ronda ${round.event_name} ${round.name}`}
             onClick={() => onSelectRound(round.id)}
             className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm transition-all cursor-pointer ${
               isActive ? activeClasses : inactiveClasses
