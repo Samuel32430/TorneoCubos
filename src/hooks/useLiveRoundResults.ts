@@ -226,6 +226,33 @@ export function useLiveRoundResults({
     };
   }, [tournamentId, resolvedRoundId, triggerRowFlash]);
 
+  useEffect(() => {
+    function handleVisibilityOrOnline() {
+      if (document.visibilityState === "visible" && resolvedRoundId) {
+        const supabase = getSupabaseBrowserClient();
+        if (!supabase) return;
+
+        void supabase
+          .from("round_results")
+          .select("*")
+          .eq("round_id", resolvedRoundId)
+          .then(({ data, error }) => {
+            if (!error && data) {
+              setResults((data as RoundResultRow[]).map(normalizeResultRow));
+            }
+          });
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityOrOnline);
+    window.addEventListener("online", handleVisibilityOrOnline);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityOrOnline);
+      window.removeEventListener("online", handleVisibilityOrOnline);
+    };
+  }, [resolvedRoundId]);
+
   return {
     rounds,
     activeRound,

@@ -242,16 +242,15 @@ export function CompetitorManager({
                 htmlFor="competitor-wca"
                 className="block text-xs font-medium text-slate-600"
               >
-                WCA ID (opcional)
+                Club
               </label>
               <input
                 id="competitor-wca"
                 type="text"
                 value={wcaId}
                 onChange={(e) => setWcaId(e.target.value)}
-                placeholder="Ej. 2023GOME01"
-                maxLength={10}
-                className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-sm uppercase text-slate-900 placeholder:normal-case placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
+                placeholder="Orion"
+                className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
               />
             </div>
 
@@ -280,7 +279,7 @@ export function CompetitorManager({
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar por #bib, nombre o WCA ID..."
+            placeholder="Buscar por #bib, nombre o Club..."
             className="block w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none"
           />
         </div>

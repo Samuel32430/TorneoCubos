@@ -346,7 +346,7 @@ export function SolveInputGrid({
               {competitor.full_name}
             </h2>
             {competitor.wca_id && (
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600">
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
                 {competitor.wca_id}
               </span>
             )}

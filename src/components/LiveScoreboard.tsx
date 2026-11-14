@@ -383,7 +383,7 @@ export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps
                               </span>
                             </div>
                             {row.competitor.wca_id && (
-                              <span className="block font-mono text-xs text-slate-400">
+                              <span className="block text-xs text-slate-400">
                                 {row.competitor.wca_id}
                               </span>
                             )}
