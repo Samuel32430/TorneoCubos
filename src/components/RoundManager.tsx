@@ -7,6 +7,7 @@ import {
   Edit2,
   FileText,
   Plus,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
@@ -65,6 +66,7 @@ export function RoundManager({
   // Visor de scrambles para jueces
   const [showScramblesPanel, setShowScramblesPanel] = useState(false);
   const [copiedScrambles, setCopiedScrambles] = useState(false);
+  const [generatingScrambles, setGeneratingScrambles] = useState(false);
 
   const selectedRound = rounds.find((r) => r.id === selectedRoundId) ?? null;
 
@@ -250,6 +252,36 @@ export function RoundManager({
     setTimeout(() => setCopiedScrambles(false), 2500);
   }
 
+  async function handleGenerateScramblesForCurrentRound() {
+    if (!selectedRound) return;
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    setGeneratingScrambles(true);
+    setErrorMessage(null);
+
+    const generated = generate10Scrambles(selectedRound.event_code);
+
+    const { data, error } = await supabase
+      .from("rounds")
+      .update({ scrambles: generated })
+      .eq("id", selectedRound.id)
+      .select("*")
+      .single();
+
+    setGeneratingScrambles(false);
+
+    if (error) {
+      setErrorMessage(
+        `Error al guardar mezclas: ${error.message}. Asegúrate de ejecutar en el SQL Editor de Supabase: alter table public.rounds add column if not exists scrambles jsonb default '[]'::jsonb;`
+      );
+      return;
+    }
+
+    onRoundUpdated(data as Round);
+    setShowScramblesPanel(true);
+  }
+
   const deleteRoundActions: ModalAction[] = [
     {
       label: "Cancelar",
@@ -385,7 +417,7 @@ export function RoundManager({
                 </button>
               )}
 
-              {roundScrambles.length > 0 && (
+              {roundScrambles.length > 0 ? (
                 <button
                   type="button"
                   onClick={() => setShowScramblesPanel(!showScramblesPanel)}
@@ -397,6 +429,17 @@ export function RoundManager({
                 >
                   <FileText className="h-3.5 w-3.5" />
                   {showScramblesPanel ? "Ocultar mezclas" : "Ver mezclas (10)"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={generatingScrambles}
+                  onClick={handleGenerateScramblesForCurrentRound}
+                  title="Generar 10 mezclas oficiales WCA para esta ronda"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-[#B45309] hover:bg-amber-100 transition-colors shadow-2xs disabled:opacity-60"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-[#F59E0B]" />
+                  {generatingScrambles ? "Generando mezclas..." : "Generar mezclas (10)"}
                 </button>
               )}
 
