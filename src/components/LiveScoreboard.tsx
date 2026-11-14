@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FileText, Moon, Search, Sun, Trophy } from "lucide-react";
 import { PodiumCards } from "@/components/PodiumCards";
 import { RoundSelector } from "@/components/RoundSelector";
+import { UpcomingTournamentView } from "@/components/UpcomingTournamentView";
 import {
   useLiveRoundResults,
   type ConnectionStatus,
@@ -137,6 +138,7 @@ function renderBestCell(row: LeaderboardRow, isDark: boolean) {
 
 export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
   const {
+    tournament: liveTournament,
     rounds,
     activeRound,
     setActiveRoundId,
@@ -146,11 +148,14 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
     lastUpdatedCompetitorId,
   } = useLiveRoundResults({
     tournamentId: snapshot.tournament?.id ?? null,
+    initialTournament: snapshot.tournament,
     initialRound: snapshot.activeRound,
     initialRounds: snapshot.rounds,
     initialCompetitors: snapshot.competitors,
     initialResults: snapshot.results,
   });
+
+  const currentTournament = liveTournament ?? snapshot.tournament;
 
   // Selector de tema (oscuro por defecto, con persistencia en localStorage)
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -208,7 +213,7 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
     );
   }
 
-  if (!snapshot.tournament) {
+  if (!currentTournament) {
     return (
       <main className={`mx-auto flex min-h-screen max-w-xl items-center justify-center px-4 py-12 ${isDark ? "bg-[#090D16]" : "bg-[#F1F5F9]"}`}>
         <div className={`w-full rounded-2xl border p-8 text-center shadow-xl ${isDark ? "border-[#1E293B] bg-[#111827]" : "border-[#CBD5E1] bg-white"}`}>
@@ -226,6 +231,20 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
     );
   }
 
+  // Si el torneo está en estado 'draft', mostrar la pantalla de presentación y cuenta regresiva
+  if (currentTournament.status === "draft") {
+    return (
+      <UpcomingTournamentView
+        tournament={currentTournament}
+        rounds={rounds}
+        competitors={competitors}
+        connectionStatus={connectionStatus}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
+      />
+    );
+  }
+
   const scramblesList = ((activeRound as unknown as { scrambles?: ScrambleItem[] })?.scrambles ?? []) as ScrambleItem[];
   const hasScrambles = scramblesList.length > 0;
   const isRoundFinished = activeRound?.status === "finished";
@@ -239,12 +258,12 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
                 <h1 className={`text-xl font-bold tracking-tight sm:text-2xl ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
-                  {snapshot.tournament.name}
+                  {currentTournament.name}
                 </h1>
                 <ConnectionBadge status={connectionStatus} isDark={isDark} />
               </div>
               <p className={`mt-1 text-sm ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
-                {formatEventDate(snapshot.tournament.event_date)}
+                {formatEventDate(currentTournament.event_date)}
                 {activeRound
                   ? ` · ${activeRound.event_name} — ${activeRound.name}`
                   : " · Sin rondas activas"}

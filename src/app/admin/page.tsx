@@ -7,9 +7,11 @@ import {
   Calendar,
   Check,
   ChevronDown,
+  Clock,
   Edit,
   ExternalLink,
   LogOut,
+  Play,
   Plus,
   Trash2,
   Trophy,
@@ -367,6 +369,31 @@ export default function AdminPage() {
     setShowEditModal(false);
   }
 
+  // Cambio rápido del estado del torneo (Borrador <-> Activo <-> Finalizado)
+  async function handleQuickStatusChange(nextStatus: TournamentStatus) {
+    if (!tournament) return;
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    const { data, error } = await supabase
+      .from("tournaments")
+      .update({ status: nextStatus })
+      .eq("id", tournament.id)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      setLoadError(`No se pudo actualizar el estado del torneo: ${error?.message ?? "Error desconocido"}`);
+      return;
+    }
+
+    const updated = data as Tournament;
+    setTournament(updated);
+    setAllTournaments((prev) =>
+      prev.map((t) => (t.id === updated.id ? updated : t))
+    );
+  }
+
   // Eliminar torneo actual
   async function handleConfirmDeleteTournament() {
     if (!tournament) return;
@@ -678,6 +705,63 @@ export default function AdminPage() {
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
+              )}
+            </div>
+
+            {/* Estado del torneo y acción rápida */}
+            <div className="flex items-center gap-2 pl-1 sm:border-l sm:border-[#CBD5E1] sm:pl-3">
+              {tournament.status === "draft" && (
+                <>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-[#B45309]">
+                    <Clock className="h-3 w-3" />
+                    Borrador (Próximamente)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStatusChange("active")}
+                    title="Iniciar el torneo y pasar al marcador en vivo para el público"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors"
+                  >
+                    <Play className="h-3 w-3 fill-current" />
+                    Iniciar Torneo
+                  </button>
+                </>
+              )}
+
+              {tournament.status === "active" && (
+                <>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    </span>
+                    En Vivo
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStatusChange("finished")}
+                    title="Marcar el torneo como finalizado"
+                    className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-[#64748B] hover:bg-slate-100 transition-colors"
+                  >
+                    Finalizar
+                  </button>
+                </>
+              )}
+
+              {tournament.status === "finished" && (
+                <>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-[#64748B]">
+                    🏁 Finalizado
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStatusChange("active")}
+                    title="Reactivar el torneo en vivo"
+                    className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  >
+                    Reactivar
+                  </button>
+                </>
               )}
             </div>
           </div>
