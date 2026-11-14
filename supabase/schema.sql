@@ -16,6 +16,7 @@ create table if not exists public.rounds (
   name text not null default 'Ronda 1',
   status text not null default 'active' check (status in ('upcoming', 'active', 'finished')),
   sort_order integer not null default 1,
+  scrambles jsonb default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -24,7 +25,7 @@ create table if not exists public.competitors (
   tournament_id uuid not null references public.tournaments(id) on delete cascade,
   bib_number integer not null,
   full_name text not null,
-  wca_id text,
+  club text,
   created_at timestamptz not null default now(),
   unique (tournament_id, bib_number)
 );

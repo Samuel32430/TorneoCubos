@@ -4,27 +4,48 @@ import type { LeaderboardRow } from "@/types/tournament";
 
 interface PodiumCardsProps {
   rows: LeaderboardRow[];
-  tvMode?: boolean;
+  isDark?: boolean;
 }
 
-const PODIUM_STYLES = [
+const PODIUM_STYLES_DARK = [
   {
     placeLabel: "1.º",
-    cardBorder: "border-t-2 border-t-amber-400",
-    badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
-    iconClass: "text-amber-600",
+    cardBorder: "border-t-2 border-t-[#FACC15]",
+    badgeClass: "bg-amber-400/10 text-[#FACC15] border-amber-400/30",
+    iconClass: "text-[#FACC15]",
   },
   {
     placeLabel: "2.º",
     cardBorder: "border-t-2 border-t-slate-400",
-    badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+    badgeClass: "bg-slate-700/30 text-slate-300 border-slate-600",
+    iconClass: "text-slate-400",
+  },
+  {
+    placeLabel: "3.º",
+    cardBorder: "border-t-2 border-t-[#EA580C]",
+    badgeClass: "bg-orange-500/10 text-[#EA580C] border-orange-500/30",
+    iconClass: "text-[#EA580C]",
+  },
+] as const;
+
+const PODIUM_STYLES_LIGHT = [
+  {
+    placeLabel: "1.º",
+    cardBorder: "border-t-4 border-t-[#F59E0B]",
+    badgeClass: "bg-amber-50 text-[#B45309] border-amber-200",
+    iconClass: "text-[#F59E0B]",
+  },
+  {
+    placeLabel: "2.º",
+    cardBorder: "border-t-4 border-t-slate-400",
+    badgeClass: "bg-slate-100 text-slate-700 border-slate-300",
     iconClass: "text-slate-500",
   },
   {
     placeLabel: "3.º",
-    cardBorder: "border-t-2 border-t-orange-400",
-    badgeClass: "bg-orange-50 text-orange-800 border-orange-200",
-    iconClass: "text-orange-600",
+    cardBorder: "border-t-4 border-t-[#EA580C]",
+    badgeClass: "bg-orange-50 text-[#EA580C] border-orange-200",
+    iconClass: "text-[#EA580C]",
   },
 ] as const;
 
@@ -32,7 +53,7 @@ function hasValidTime(cs: number | null | undefined): cs is number {
   return cs !== null && cs !== undefined && cs >= 0;
 }
 
-export function PodiumCards({ rows, tvMode = false }: PodiumCardsProps) {
+export function PodiumCards({ rows, isDark = true }: PodiumCardsProps) {
   const contenders = rows
     .filter((row) => {
       if (!row.result || row.result.completed_count === 0) return false;
@@ -42,10 +63,12 @@ export function PodiumCards({ rows, tvMode = false }: PodiumCardsProps) {
 
   if (contenders.length === 0) return null;
 
+  const styleList = isDark ? PODIUM_STYLES_DARK : PODIUM_STYLES_LIGHT;
+
   return (
     <section aria-label="Podio provisional" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {contenders.map((row, index) => {
-        const style = PODIUM_STYLES[index] ?? PODIUM_STYLES[2];
+        const style = styleList[index] ?? styleList[2];
         const result = row.result!;
         const hasValidAverage = hasValidTime(result.average_cs);
         const isFinished = result.completed_count >= 5;
@@ -75,7 +98,11 @@ export function PodiumCards({ rows, tvMode = false }: PodiumCardsProps) {
         return (
           <div
             key={row.competitor.id}
-            className={`rounded-xl border border-slate-200 bg-white p-4 shadow-xs ${style.cardBorder}`}
+            className={`rounded-2xl border p-4 shadow-sm transition-colors ${style.cardBorder} ${
+              isDark
+                ? "border-[#1E293B] bg-[#111827]"
+                : "border-[#CBD5E1] bg-white"
+            }`}
           >
             <div className="flex items-center justify-between gap-2">
               <span
@@ -89,47 +116,41 @@ export function PodiumCards({ rows, tvMode = false }: PodiumCardsProps) {
                 {placeText}
               </span>
 
-              <span className="font-mono text-xs text-slate-400 tabular-nums">
-                {isFinished ? `#${row.competitor.bib_number}` : `${result.completed_count}/5`}
+              <span className={`font-mono text-xs tabular-nums ${isDark ? "text-slate-500" : "text-[#64748B]"}`}>
+                {result.completed_count}/5
               </span>
             </div>
 
             <div className="mt-2.5">
-              <p
-                className={`truncate font-semibold text-slate-900 ${
-                  tvMode ? "text-lg" : "text-base"
-                }`}
-              >
+              <p className={`truncate font-semibold text-base ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
                 {row.competitor.full_name}
               </p>
-              {row.competitor.wca_id && (
-                <p className="text-xs text-slate-400">{row.competitor.wca_id}</p>
+              {row.competitor.club && (
+                <p className={`text-xs font-medium ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+                  {row.competitor.club}
+                </p>
               )}
             </div>
 
-            <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-2.5">
+            <div
+              className={`mt-3 flex items-baseline justify-between border-t pt-2.5 ${
+                isDark ? "border-[#1E293B]" : "border-[#CBD5E1]"
+              }`}
+            >
               <div>
-                <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                <span className={`block text-[11px] font-medium uppercase tracking-wide ${isDark ? "text-slate-400" : "text-[#64748B]"}`}>
                   {mainLabel}
                 </span>
-                <span
-                  className={`font-mono font-bold tabular-nums text-slate-900 ${
-                    tvMode ? "text-2xl" : "text-xl"
-                  }`}
-                >
+                <span className={`font-mono font-bold tabular-nums text-xl ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
                   {mainValue}
                 </span>
               </div>
 
               <div className="text-right">
-                <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                <span className={`block text-[11px] font-medium uppercase tracking-wide ${isDark ? "text-slate-400" : "text-[#64748B]"}`}>
                   Mejor
                 </span>
-                <span
-                  className={`font-mono font-semibold tabular-nums text-slate-600 ${
-                    tvMode ? "text-base" : "text-sm"
-                  }`}
-                >
+                <span className={`font-mono font-semibold tabular-nums text-sm ${isDark ? "text-slate-300" : "text-[#0F172A]"}`}>
                   {bestValue}
                 </span>
               </div>

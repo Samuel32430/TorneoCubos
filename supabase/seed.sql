@@ -33,12 +33,12 @@ begin
     returning id into v_round_id;
   end if;
 
-  insert into public.competitors (tournament_id, bib_number, full_name, wca_id)
+  insert into public.competitors (tournament_id, bib_number, full_name, club)
   values
-    (v_tournament_id, 1, 'Mateo Herrera', '2022HERR01'),
-    (v_tournament_id, 2, 'Valeria Mendoza', '2023MEND04'),
+    (v_tournament_id, 1, 'Mateo Herrera', 'Orion Speedcubing'),
+    (v_tournament_id, 2, 'Valeria Mendoza', 'Rubik Lima'),
     (v_tournament_id, 3, 'Diego Rojas', null),
-    (v_tournament_id, 4, 'Camila Navarro', '2024NAVA02')
+    (v_tournament_id, 4, 'Camila Navarro', 'Orion Speedcubing')
   on conflict (tournament_id, bib_number) do nothing;
 
   select id into v_comp1_id

@@ -30,14 +30,21 @@ export async function fetchTournamentSnapshot(
     };
   }
 
-  const { data: tournaments } = await supabase
+  // Consulta optimizada única con joins anidados: reduce 3 viajes de red a solo 1
+  const { data: tournaments, error } = await supabase
     .from("tournaments")
-    .select("*")
+    .select(`
+      *,
+      rounds (
+        *,
+        round_results (*)
+      ),
+      competitors (*)
+    `)
     .order("created_at", { ascending: false })
     .limit(1);
 
-  const tournament = (tournaments?.[0] as Tournament | undefined) ?? null;
-  if (!tournament) {
+  if (error || !tournaments || tournaments.length === 0) {
     return {
       configured: true,
       tournament: null,
@@ -48,22 +55,23 @@ export async function fetchTournamentSnapshot(
     };
   }
 
-  const [{ data: roundsData }, { data: competitorsData }] = await Promise.all([
-    supabase
-      .from("rounds")
-      .select("*")
-      .eq("tournament_id", tournament.id)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("competitors")
-      .select("*")
-      .eq("tournament_id", tournament.id)
-      .order("bib_number", { ascending: true }),
-  ]);
+  const rawTournament = tournaments[0];
+  const { rounds: rawRounds, competitors: rawCompetitors, ...tournamentFields } = rawTournament;
 
-  const rounds = (roundsData as Round[] | null) ?? [];
-  const competitors = (competitorsData as Competitor[] | null) ?? [];
+  const tournament: Tournament = tournamentFields as Tournament;
+
+  const rounds: Round[] = (
+    (rawRounds as Array<Round & { round_results?: RoundResultRow[] }> | null) ?? []
+  )
+    .map((r) => {
+      const { round_results: _ignored, ...roundData } = r;
+      return roundData as Round;
+    })
+    .sort((a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at));
+
+  const competitors: Competitor[] = (
+    (rawCompetitors as Competitor[] | null) ?? []
+  ).sort((a, b) => a.bib_number - b.bib_number);
 
   const activeRound =
     rounds.find((r) => r.id === selectedRoundId) ??
@@ -82,10 +90,11 @@ export async function fetchTournamentSnapshot(
     };
   }
 
-  const { data: resultsData } = await supabase
-    .from("round_results")
-    .select("*")
-    .eq("round_id", activeRound.id);
+  const activeRoundWithResults = (
+    rawRounds as Array<Round & { round_results?: RoundResultRow[] }> | null
+  )?.find((r) => r.id === activeRound.id);
+
+  const results: RoundResultRow[] = (activeRoundWithResults?.round_results ?? []) as RoundResultRow[];
 
   return {
     configured: true,
@@ -93,6 +102,6 @@ export async function fetchTournamentSnapshot(
     rounds,
     activeRound,
     competitors,
-    results: (resultsData as RoundResultRow[] | null) ?? [],
+    results,
   };
 }

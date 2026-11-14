@@ -13,9 +13,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Torneo Cubo — Resultados en Vivo",
+  title: "Torneo Cubo — Marcador Oficial en Vivo",
   description:
-    "Marcador oficial en vivo para torneos de cubo Rubik con reglas WCA (Ao5).",
+    "Resultados y posiciones en tiempo real para torneos oficiales de cubo Rubik.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -28,7 +37,7 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-slate-50 text-slate-900 font-sans">
+      <body className="min-h-full font-sans selection:bg-[#F59E0B]/30">
         {children}
       </body>
     </html>

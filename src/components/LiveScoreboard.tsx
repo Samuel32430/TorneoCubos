@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import Link from "next/link";
-import { ArrowLeft, Settings, Tv } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { FileText, Moon, Search, Sun, Trophy } from "lucide-react";
 import { PodiumCards } from "@/components/PodiumCards";
 import { RoundSelector } from "@/components/RoundSelector";
 import {
@@ -16,11 +15,10 @@ import {
   formatSolveSlot,
   normalizeSolves,
 } from "@/lib/wca";
-import type { LeaderboardRow } from "@/types/tournament";
+import type { LeaderboardRow, ScrambleItem } from "@/types/tournament";
 
 interface LiveScoreboardProps {
   snapshot: TournamentSnapshot;
-  tvMode?: boolean;
 }
 
 function formatEventDate(dateValue: string): string {
@@ -34,10 +32,16 @@ function formatEventDate(dateValue: string): string {
   }).format(parsed);
 }
 
-function ConnectionBadge({ status }: { status: ConnectionStatus }) {
+function ConnectionBadge({ status, isDark }: { status: ConnectionStatus; isDark: boolean }) {
   if (status === "live") {
     return (
-      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+      <span
+        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
+          isDark
+            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+            : "border-emerald-200 bg-emerald-50 text-emerald-700"
+        }`}
+      >
         <span className="relative flex h-2 w-2">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -49,7 +53,13 @@ function ConnectionBadge({ status }: { status: ConnectionStatus }) {
 
   if (status === "connecting") {
     return (
-      <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+      <span
+        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${
+          isDark
+            ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+            : "border-amber-200 bg-amber-50 text-[#B45309]"
+        }`}
+      >
         <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />
         Conectando
       </span>
@@ -57,30 +67,36 @@ function ConnectionBadge({ status }: { status: ConnectionStatus }) {
   }
 
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+    <span
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${
+        isDark
+          ? "border-slate-700 bg-slate-800/80 text-slate-400"
+          : "border-[#CBD5E1] bg-slate-100 text-[#64748B]"
+      }`}
+    >
       <span className="h-2 w-2 rounded-full bg-slate-400" />
       Sin conexión
     </span>
   );
 }
 
-function renderAverageCell(row: LeaderboardRow, tvMode: boolean) {
+function renderAverageCell(row: LeaderboardRow, isDark: boolean) {
   const result = row.result;
   if (!result || result.completed_count === 0) {
-    return <span className="text-slate-300">—</span>;
+    return <span className={isDark ? "text-slate-600" : "text-[#CBD5E1]"}>—</span>;
   }
 
   if (result.completed_count >= 5) {
     if (result.average_cs !== null && result.average_cs >= 0) {
       return (
-        <span className="font-bold text-slate-900">
+        <span className={`font-bold ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
           {formatCentiseconds(result.average_cs)}
         </span>
       );
     }
     const dnfText =
       result.average_cs !== null ? formatCentiseconds(result.average_cs) : "DNF";
-    return <span className="font-semibold text-rose-600">{dnfText}</span>;
+    return <span className="font-semibold text-[#EF4444]">{dnfText}</span>;
   }
 
   if (result.completed_count === 4) {
@@ -89,30 +105,26 @@ function renderAverageCell(row: LeaderboardRow, tvMode: boolean) {
 
     return (
       <div className="flex flex-col items-end">
-        <span className="text-slate-400">—</span>
-        <span
-          className={`mt-0.5 font-normal text-slate-500 ${
-            tvMode ? "text-xs" : "text-[11px]"
-          }`}
-        >
+        <span className={isDark ? "text-slate-500" : "text-[#94A3B8]"}>—</span>
+        <span className={`mt-0.5 text-[11px] font-normal ${isDark ? "text-slate-400" : "text-[#64748B]"}`}>
           BPA {bpaText} · WPA {wpaText}
         </span>
       </div>
     );
   }
 
-  return <span className="text-slate-300">—</span>;
+  return <span className={isDark ? "text-slate-600" : "text-[#CBD5E1]"}>—</span>;
 }
 
-function renderBestCell(row: LeaderboardRow) {
+function renderBestCell(row: LeaderboardRow, isDark: boolean) {
   const result = row.result;
   if (!result || result.completed_count === 0) {
-    return <span className="text-slate-300">—</span>;
+    return <span className={isDark ? "text-slate-600" : "text-[#CBD5E1]"}>—</span>;
   }
 
   if (result.best_cs !== null && result.best_cs >= 0) {
     return (
-      <span className="font-medium text-slate-700">
+      <span className={`font-medium ${isDark ? "text-slate-200" : "text-[#0F172A]"}`}>
         {formatCentiseconds(result.best_cs)}
       </span>
     );
@@ -120,10 +132,10 @@ function renderBestCell(row: LeaderboardRow) {
 
   const fallback =
     result.best_cs !== null ? formatCentiseconds(result.best_cs) : "DNF";
-  return <span className="font-medium text-rose-600">{fallback}</span>;
+  return <span className="font-medium text-[#EF4444]">{fallback}</span>;
 }
 
-export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps) {
+export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
   const {
     rounds,
     activeRound,
@@ -140,39 +152,57 @@ export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps
     initialResults: snapshot.results,
   });
 
+  // Selector de tema (oscuro por defecto, con persistencia en localStorage)
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showScrambles, setShowScrambles] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("scoreboard_theme");
+    if (saved === "light" || saved === "dark") {
+      setTheme(saved);
+    }
+  }, []);
+
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("scoreboard_theme", next);
+  }
+
+  const isDark = theme === "dark";
+
   const leaderboard = useMemo(
     () => buildLeaderboard(competitors, results),
     [competitors, results]
   );
 
+  const filteredLeaderboard = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return leaderboard;
+
+    return leaderboard.filter((row) => {
+      const bibMatch = String(row.competitor.bib_number).includes(query);
+      const nameMatch = row.competitor.full_name.toLowerCase().includes(query);
+      const clubMatch =
+        row.competitor.club?.toLowerCase().includes(query) ?? false;
+      return bibMatch || nameMatch || clubMatch;
+    });
+  }, [leaderboard, searchQuery]);
+
   if (!snapshot.configured) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-2xl items-center justify-center px-4 py-12">
-        <div className="w-full rounded-xl border border-slate-200 bg-white p-8 text-center shadow-xs">
-          <h1 className="text-xl font-bold text-slate-900">
-            Supabase no está configurado
-          </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Agrega las variables{" "}
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-800">
-              NEXT_PUBLIC_SUPABASE_URL
-            </code>{" "}
-            y{" "}
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-800">
-              NEXT_PUBLIC_SUPABASE_ANON_KEY
-            </code>{" "}
-            en tu archivo <code className="font-mono text-xs">.env.local</code> para
-            habilitar el marcador en vivo.
-          </p>
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/admin"
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800"
-            >
-              <Settings className="h-4 w-4" />
-              Ir a administración
-            </Link>
+      <main className={`mx-auto flex min-h-screen max-w-xl items-center justify-center px-4 py-12 ${isDark ? "bg-[#090D16]" : "bg-[#F1F5F9]"}`}>
+        <div className={`w-full rounded-2xl border p-8 text-center shadow-xl ${isDark ? "border-[#1E293B] bg-[#111827]" : "border-[#CBD5E1] bg-white"}`}>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-[#F59E0B]">
+            <Trophy className="h-6 w-6" />
           </div>
+          <h1 className={`mt-4 text-xl font-bold ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
+            Marcador del Torneo
+          </h1>
+          <p className={`mt-2 text-sm ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+            El sistema se está configurando. En breve los resultados en vivo estarán disponibles.
+          </p>
         </div>
       </main>
     );
@@ -180,60 +210,40 @@ export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps
 
   if (!snapshot.tournament) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-2xl items-center justify-center px-4 py-12">
-        <div className="w-full rounded-xl border border-slate-200 bg-white p-8 text-center shadow-xs">
-          <h1 className="text-xl font-bold text-slate-900">
-            Aún no hay ningún torneo creado
-          </h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Configura el torneo, crea las rondas e inscribe a los competidores desde
-            el panel de administración para mostrar los resultados en vivo.
-          </p>
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/admin"
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              <Settings className="h-4 w-4" />
-              Configurar torneo en /admin
-            </Link>
+      <main className={`mx-auto flex min-h-screen max-w-xl items-center justify-center px-4 py-12 ${isDark ? "bg-[#090D16]" : "bg-[#F1F5F9]"}`}>
+        <div className={`w-full rounded-2xl border p-8 text-center shadow-xl ${isDark ? "border-[#1E293B] bg-[#111827]" : "border-[#CBD5E1] bg-white"}`}>
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-[#F59E0B]">
+            <Trophy className="h-6 w-6" />
           </div>
+          <h1 className={`mt-4 text-xl font-bold ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
+            El torneo comenzará pronto
+          </h1>
+          <p className={`mt-2 text-sm ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+            Los resultados oficiales y las posiciones se actualizarán aquí en vivo conforme los competidores realicen sus resoluciones.
+          </p>
         </div>
       </main>
     );
   }
 
-  const tvToggleHref = activeRound
-    ? `${tvMode ? "/" : "/tv"}?round=${encodeURIComponent(activeRound.id)}`
-    : tvMode
-      ? "/"
-      : "/tv";
+  const scramblesList = ((activeRound as unknown as { scrambles?: ScrambleItem[] })?.scrambles ?? []) as ScrambleItem[];
+  const hasScrambles = scramblesList.length > 0;
+  const isRoundFinished = activeRound?.status === "finished";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div
-        className={`mx-auto px-4 sm:px-6 ${
-          tvMode ? "max-w-[1600px] py-6 space-y-6" : "max-w-6xl py-6 sm:py-8 space-y-5"
-        }`}
-      >
-        <header className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-xs">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <main className={`min-h-screen transition-colors duration-150 ${isDark ? "bg-[#090D16] text-[#F8FAFC]" : "bg-[#F1F5F9] text-[#0F172A]"}`}>
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 space-y-5">
+        {/* Cabecera oficial del torneo con selector de tema */}
+        <header className={`rounded-2xl border px-5 py-4 shadow-sm transition-colors ${isDark ? "border-[#1E293B] bg-[#111827]" : "border-[#CBD5E1] bg-white"}`}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
-                <h1
-                  className={`font-bold tracking-tight text-slate-900 ${
-                    tvMode ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
-                  }`}
-                >
+                <h1 className={`text-xl font-bold tracking-tight sm:text-2xl ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
                   {snapshot.tournament.name}
                 </h1>
-                <ConnectionBadge status={connectionStatus} />
+                <ConnectionBadge status={connectionStatus} isDark={isDark} />
               </div>
-              <p
-                className={`mt-1 text-slate-500 ${
-                  tvMode ? "text-base" : "text-sm"
-                }`}
-              >
+              <p className={`mt-1 text-sm ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
                 {formatEventDate(snapshot.tournament.event_date)}
                 {activeRound
                   ? ` · ${activeRound.event_name} — ${activeRound.name}`
@@ -241,75 +251,182 @@ export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                href={tvToggleHref}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+            {/* Alternar Tema Claro / Oscuro */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  isDark
+                    ? "border-[#1E293B] bg-[#090D16] text-[#94A3B8] hover:border-slate-700 hover:text-[#F8FAFC]"
+                    : "border-[#CBD5E1] bg-[#F8FAFC] text-[#64748B] hover:border-[#0F172A] hover:text-[#0F172A]"
+                }`}
               >
-                {tvMode ? (
+                {isDark ? (
                   <>
-                    <ArrowLeft className="h-4 w-4 text-slate-500" />
-                    Vista normal
+                    <Sun className="h-4 w-4 text-[#FACC15]" />
+                    <span>Modo claro</span>
                   </>
                 ) : (
                   <>
-                    <Tv className="h-4 w-4 text-blue-600" />
-                    Modo TV
+                    <Moon className="h-4 w-4 text-[#0F172A]" />
+                    <span>Modo oscuro</span>
                   </>
                 )}
-              </Link>
-
-              <Link
-                href="/admin"
-                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition-colors ${
-                  tvMode
-                    ? "text-xs text-slate-400 hover:text-slate-600"
-                    : "border border-slate-200 bg-slate-50 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                <Settings className="h-3.5 w-3.5" />
-                Admin
-              </Link>
+              </button>
             </div>
           </div>
         </header>
 
+        {/* Selector de rondas */}
         <RoundSelector
           rounds={rounds}
           activeRound={activeRound}
           onSelectRound={setActiveRoundId}
-          tvMode={tvMode}
+          isDark={isDark}
         />
 
-        <PodiumCards rows={leaderboard} tvMode={tvMode} />
+        {/* Podio provisional */}
+        <PodiumCards rows={leaderboard} isDark={isDark} />
 
+        {/* Buscador de competidores y botón de mezclas (solo cuando la ronda esté finalizada) */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${isDark ? "text-slate-500" : "text-[#64748B]"}`} />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar por nombre o club..."
+              className={`w-full rounded-xl border py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 ${
+                isDark
+                  ? "border-[#1E293B] bg-[#111827] text-[#F8FAFC] placeholder:text-[#94A3B8] focus:border-[#F59E0B] focus:ring-[#F59E0B]"
+                  : "border-[#CBD5E1] bg-white text-[#0F172A] placeholder:text-[#64748B]/60 focus:border-[#0F172A] focus:ring-[#0F172A]"
+              }`}
+            />
+          </div>
+
+          {/* Scrambles: solo disponibles para el público cuando la ronda esté finalizada */}
+          {isRoundFinished && hasScrambles && (
+            <button
+              type="button"
+              onClick={() => setShowScrambles((prev) => !prev)}
+              aria-label={showScrambles ? "Ocultar mezclas oficiales" : "Ver mezclas oficiales"}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-colors ${
+                isDark
+                  ? "border-[#1E293B] bg-[#111827] text-[#94A3B8] hover:border-slate-700 hover:text-[#F8FAFC]"
+                  : "border-amber-200 bg-amber-50 text-[#B45309] hover:bg-amber-100"
+              }`}
+            >
+              <FileText className="h-4 w-4 text-[#F59E0B]" />
+              {showScrambles ? "Ocultar mezclas oficiales" : "Ver mezclas oficiales (Scrambles)"}
+            </button>
+          )}
+        </div>
+
+        {/* Sección de Scrambles: solo visible si la ronda ya terminó y el usuario lo solicitó */}
+        {isRoundFinished && hasScrambles && showScrambles && (
+          <section className={`rounded-2xl border p-4 sm:p-5 shadow-lg ${
+            isDark
+              ? "border-[#1E293B] bg-[#111827]"
+              : "border-amber-200 bg-white"
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${isDark ? "border-[#1E293B]" : "border-amber-200/80"}`}>
+              <div>
+                <h3 className={`text-sm font-bold ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
+                  Mezclas Oficiales — {activeRound?.event_name} ({activeRound?.name})
+                </h3>
+                <p className={`text-xs ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+                  Ronda finalizada: mezclas públicas para verificación de la comunidad.
+                </p>
+              </div>
+              <span className={`rounded-full px-2.5 py-0.5 font-mono text-xs font-semibold ${isDark ? "bg-slate-800 text-slate-300" : "bg-amber-100 text-[#B45309]"}`}>
+                10 mezclas
+              </span>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? "text-[#FACC15]" : "text-[#B45309]"}`}>
+                  Grupo A (Intentos 1 - 5)
+                </p>
+                <div className="mt-2 space-y-1.5 font-mono text-xs">
+                  {scramblesList
+                    .filter((s) => s.group === "A")
+                    .map((scramble) => (
+                      <div
+                        key={scramble.id}
+                        className={`rounded-lg p-2 border ${
+                          isDark
+                            ? "bg-[#090D16] border-[#1E293B] text-[#F8FAFC]"
+                            : "bg-[#F8FAFC] border-amber-200/60 text-[#0F172A]"
+                        }`}
+                      >
+                        <span className={`font-bold mr-2 ${isDark ? "text-[#F59E0B]" : "text-[#EA580C]"}`}>
+                          #{scramble.attempt}:
+                        </span>
+                        <span>{scramble.sequence}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div>
+                <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-[#64748B]"}`}>
+                  Grupo B (Intentos 1 - 5)
+                </p>
+                <div className="mt-2 space-y-1.5 font-mono text-xs">
+                  {scramblesList
+                    .filter((s) => s.group === "B")
+                    .map((scramble) => (
+                      <div
+                        key={scramble.id}
+                        className={`rounded-lg p-2 border ${
+                          isDark
+                            ? "bg-[#090D16] border-[#1E293B] text-[#F8FAFC]"
+                            : "bg-[#F8FAFC] border-amber-200/60 text-[#0F172A]"
+                        }`}
+                      >
+                        <span className={`font-bold mr-2 ${isDark ? "text-slate-400" : "text-[#64748B]"}`}>
+                          #{scramble.attempt}:
+                        </span>
+                        <span>{scramble.sequence}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Tabla oficial de resultados */}
         <section
           aria-label="Tabla oficial de resultados"
-          className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs"
+          className={`overflow-hidden rounded-2xl border shadow-sm transition-colors ${
+            isDark
+              ? "border-[#1E293B] bg-[#111827]"
+              : "border-[#CBD5E1] bg-white"
+          }`}
         >
           {competitors.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm font-medium text-slate-700">
+            <div className={`px-6 py-12 text-center ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+              <p className="text-sm">
                 No hay competidores registrados en este torneo todavía.
               </p>
-              <Link
-                href="/admin"
-                className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
-              >
-                Agregar competidores en /admin
-              </Link>
             </div>
           ) : !activeRound ? (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm font-medium text-slate-700">
-                No hay rondas creadas todavía para este torneo.
+            <div className={`px-6 py-12 text-center ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+              <p className="text-sm">
+                No hay rondas activas en este momento.
               </p>
-              <Link
-                href="/admin"
-                className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
-              >
-                Crear una ronda en /admin
-              </Link>
+            </div>
+          ) : filteredLeaderboard.length === 0 ? (
+            <div className={`px-6 py-12 text-center ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+              <p className="text-sm">
+                No se encontraron competidores que coincidan con &ldquo;{searchQuery}&rdquo;.
+              </p>
             </div>
           ) : (
             <>
@@ -317,8 +434,10 @@ export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps
                 <table className="w-full border-collapse text-left">
                   <thead>
                     <tr
-                      className={`border-b border-slate-200 bg-slate-50/80 font-semibold uppercase tracking-wider text-slate-500 ${
-                        tvMode ? "text-xs" : "text-[11px]"
+                      className={`border-b text-[11px] font-bold uppercase tracking-wider ${
+                        isDark
+                          ? "border-[#1E293B] bg-[#090D16]/60 text-[#94A3B8]"
+                          : "border-[#CBD5E1] bg-[#F8FAFC] text-[#64748B]"
                       }`}
                     >
                       <th className="w-12 px-3 py-3 text-center sm:px-4">#</th>
@@ -336,12 +455,8 @@ export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps
                       </th>
                     </tr>
                   </thead>
-                  <tbody
-                    className={`divide-y divide-slate-100 ${
-                      tvMode ? "text-base" : "text-sm"
-                    }`}
-                  >
-                    {leaderboard.map((row) => {
+                  <tbody className={`divide-y text-sm ${isDark ? "divide-[#1E293B]" : "divide-[#CBD5E1]/60"}`}>
+                    {filteredLeaderboard.map((row) => {
                       const solves = normalizeSolves(row.result?.solves ?? []);
                       const isFlashing =
                         row.competitor.id === lastUpdatedCompetitorId;
@@ -349,44 +464,43 @@ export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps
                       return (
                         <tr
                           key={row.competitor.id}
-                          className={`transition-colors hover:bg-slate-50/80 ${
-                            isFlashing ? "animate-row-flash" : ""
-                          }`}
+                          className={`transition-colors ${
+                            isDark
+                              ? "hover:bg-[#1E293B]/50"
+                              : "hover:bg-[#F8FAFC]"
+                          } ${isFlashing ? "animate-row-flash" : ""}`}
                         >
                           <td className="px-3 py-3 text-center font-mono tabular-nums font-semibold sm:px-4">
                             {row.rank === 1 ? (
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FACC15] text-xs font-bold text-slate-950 shadow-xs">
                                 1
                               </span>
                             ) : row.rank === 2 ? (
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-300 text-xs font-bold text-slate-900">
                                 2
                               </span>
                             ) : row.rank === 3 ? (
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-800">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-600/90 text-xs font-bold text-white">
                                 3
                               </span>
                             ) : (
-                              <span className="text-slate-500">
+                              <span className={isDark ? "text-[#94A3B8]" : "text-[#64748B]"}>
                                 {row.rank ?? "—"}
                               </span>
                             )}
                           </td>
 
                           <td className="px-3 py-3 sm:px-4">
-                            <div className="flex items-baseline gap-2">
-                              <span className="font-medium text-slate-900">
+                            <div className="min-w-0">
+                              <span className={`font-semibold ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
                                 {row.competitor.full_name}
                               </span>
-                              <span className="font-mono text-xs text-slate-400 tabular-nums">
-                                #{row.competitor.bib_number}
-                              </span>
+                              {row.competitor.club && (
+                                <span className={`block text-xs font-medium ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+                                  {row.competitor.club}
+                                </span>
+                              )}
                             </div>
-                            {row.competitor.wca_id && (
-                              <span className="block text-xs text-slate-400">
-                                {row.competitor.wca_id}
-                              </span>
-                            )}
                           </td>
 
                           {solves.map((slot, idx) => {
@@ -397,33 +511,37 @@ export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps
                               !isEmpty &&
                               (idx === row.droppedMinIndex ||
                                 idx === row.droppedMaxIndex);
-                            const isDnfOrDns =
-                              slot.penalty === "DNF" || slot.penalty === "DNS";
+
+                            let textColor = isDark ? "text-[#F8FAFC]" : "text-[#0F172A]";
+                            if (isEmpty) {
+                              textColor = isDark ? "text-slate-600" : "text-[#CBD5E1]";
+                            } else if (isDropped) {
+                              textColor = isDark ? "text-[#64748B] line-through font-normal" : "text-[#94A3B8] line-through font-normal";
+                            } else if (slot.penalty === "+2") {
+                              textColor = "font-bold text-[#EA580C]";
+                            } else if (
+                              slot.penalty === "DNF" ||
+                              slot.penalty === "DNS"
+                            ) {
+                              textColor = "font-bold text-[#EF4444]";
+                            }
 
                             return (
                               <td
                                 key={idx}
-                                className="whitespace-nowrap px-2.5 py-3 text-right font-mono tabular-nums"
+                                className={`px-2.5 py-3 text-right font-mono tabular-nums ${textColor}`}
                               >
-                                {isEmpty ? (
-                                  <span className="text-slate-300">—</span>
-                                ) : isDropped ? (
-                                  <span className="text-slate-400">({formatted})</span>
-                                ) : isDnfOrDns ? (
-                                  <span className="text-rose-600">{formatted}</span>
-                                ) : (
-                                  <span className="text-slate-700">{formatted}</span>
-                                )}
+                                {isDropped ? `(${formatted})` : formatted || "—"}
                               </td>
                             );
                           })}
 
-                          <td className="whitespace-nowrap px-3 py-3 text-right font-mono tabular-nums sm:px-4">
-                            {renderAverageCell(row, tvMode)}
+                          <td className="px-3 py-3 text-right font-mono tabular-nums sm:px-4">
+                            {renderAverageCell(row, isDark)}
                           </td>
 
-                          <td className="whitespace-nowrap px-3 py-3 text-right font-mono tabular-nums sm:px-4">
-                            {renderBestCell(row)}
+                          <td className="px-3 py-3 text-right font-mono tabular-nums sm:px-4">
+                            {renderBestCell(row, isDark)}
                           </td>
                         </tr>
                       );
@@ -432,20 +550,17 @@ export function LiveScoreboard({ snapshot, tvMode = false }: LiveScoreboardProps
                 </table>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-2.5 text-xs text-slate-500">
-                <span>
-                  Reglas WCA (Ao5): los tiempos entre paréntesis corresponden al mejor
-                  y peor intento descartados.
-                </span>
-                <span className="font-mono tabular-nums">
-                  {competitors.length}{" "}
-                  {competitors.length === 1 ? "competidor" : "competidores"}
-                </span>
+              <div className={`border-t px-4 py-3 text-xs ${
+                isDark ? "border-[#1E293B] bg-[#090D16]/40 text-[#94A3B8]" : "border-[#CBD5E1] bg-[#F8FAFC] text-[#64748B]"
+              }`}>
+                <p>
+                  * Los tiempos entre paréntesis () indican los extremos descartados (mejor y peor intento) para el cálculo del promedio Ao5.
+                </p>
               </div>
             </>
           )}
         </section>
       </div>
-    </div>
+    </main>
   );
 }
