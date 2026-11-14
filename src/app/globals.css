@@ -7,7 +7,7 @@
 
 @keyframes rowFlash {
   0% {
-    background-color: rgb(254 240 138);
+    background-color: rgba(250, 204, 21, 0.22);
   }
   100% {
     background-color: transparent;
@@ -15,5 +15,5 @@
 }
 
 .animate-row-flash {
-  animation: rowFlash 2.2s ease-out;
+  animation: rowFlash 2.4s ease-out;
 }

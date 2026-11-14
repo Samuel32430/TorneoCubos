@@ -4,27 +4,26 @@ import type { LeaderboardRow } from "@/types/tournament";
 
 interface PodiumCardsProps {
   rows: LeaderboardRow[];
-  tvMode?: boolean;
 }
 
 const PODIUM_STYLES = [
   {
     placeLabel: "1.º",
-    cardBorder: "border-t-2 border-t-amber-400",
-    badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
-    iconClass: "text-amber-600",
+    cardBorder: "border-t-2 border-t-[#FACC15]",
+    badgeClass: "bg-amber-400/10 text-[#FACC15] border-amber-400/30",
+    iconClass: "text-[#FACC15]",
   },
   {
     placeLabel: "2.º",
     cardBorder: "border-t-2 border-t-slate-400",
-    badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
-    iconClass: "text-slate-500",
+    badgeClass: "bg-slate-700/30 text-slate-300 border-slate-600",
+    iconClass: "text-slate-400",
   },
   {
     placeLabel: "3.º",
-    cardBorder: "border-t-2 border-t-orange-400",
-    badgeClass: "bg-orange-50 text-orange-800 border-orange-200",
-    iconClass: "text-orange-600",
+    cardBorder: "border-t-2 border-t-[#EA580C]",
+    badgeClass: "bg-orange-500/10 text-[#EA580C] border-orange-500/30",
+    iconClass: "text-[#EA580C]",
   },
 ] as const;
 
@@ -32,7 +31,7 @@ function hasValidTime(cs: number | null | undefined): cs is number {
   return cs !== null && cs !== undefined && cs >= 0;
 }
 
-export function PodiumCards({ rows, tvMode = false }: PodiumCardsProps) {
+export function PodiumCards({ rows }: PodiumCardsProps) {
   const contenders = rows
     .filter((row) => {
       if (!row.result || row.result.completed_count === 0) return false;
@@ -75,7 +74,7 @@ export function PodiumCards({ rows, tvMode = false }: PodiumCardsProps) {
         return (
           <div
             key={row.competitor.id}
-            className={`rounded-xl border border-slate-200 bg-white p-4 shadow-xs ${style.cardBorder}`}
+            className={`rounded-2xl border border-[#1E293B] bg-[#111827] p-4 shadow-lg ${style.cardBorder}`}
           >
             <div className="flex items-center justify-between gap-2">
               <span
@@ -89,34 +88,26 @@ export function PodiumCards({ rows, tvMode = false }: PodiumCardsProps) {
                 {placeText}
               </span>
 
-              <span className="font-mono text-xs text-slate-400 tabular-nums">
+              <span className="font-mono text-xs text-slate-500 tabular-nums">
                 {isFinished ? `#${row.competitor.bib_number}` : `${result.completed_count}/5`}
               </span>
             </div>
 
             <div className="mt-2.5">
-              <p
-                className={`truncate font-semibold text-slate-900 ${
-                  tvMode ? "text-lg" : "text-base"
-                }`}
-              >
+              <p className="truncate font-semibold text-[#F8FAFC] text-base">
                 {row.competitor.full_name}
               </p>
               {row.competitor.wca_id && (
-                <p className="text-xs text-slate-400">{row.competitor.wca_id}</p>
+                <p className="text-xs text-[#94A3B8] font-medium">{row.competitor.wca_id}</p>
               )}
             </div>
 
-            <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-2.5">
+            <div className="mt-3 flex items-baseline justify-between border-t border-[#1E293B] pt-2.5">
               <div>
                 <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">
                   {mainLabel}
                 </span>
-                <span
-                  className={`font-mono font-bold tabular-nums text-slate-900 ${
-                    tvMode ? "text-2xl" : "text-xl"
-                  }`}
-                >
+                <span className="font-mono font-bold tabular-nums text-[#F8FAFC] text-xl">
                   {mainValue}
                 </span>
               </div>
@@ -125,11 +116,7 @@ export function PodiumCards({ rows, tvMode = false }: PodiumCardsProps) {
                 <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">
                   Mejor
                 </span>
-                <span
-                  className={`font-mono font-semibold tabular-nums text-slate-600 ${
-                    tvMode ? "text-base" : "text-sm"
-                  }`}
-                >
+                <span className="font-mono font-semibold tabular-nums text-slate-300 text-sm">
                   {bestValue}
                 </span>
               </div>

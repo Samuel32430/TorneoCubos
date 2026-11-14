@@ -6,21 +6,20 @@ interface RoundSelectorProps {
   rounds: Round[];
   activeRound: Round | null;
   onSelectRound: (roundId: string) => void;
-  tvMode?: boolean;
 }
 
 const STATUS_BADGE: Record<RoundStatus, { label: string; className: string }> = {
   active: {
     label: "En curso",
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    className: "bg-emerald-500/10 text-[#10B981] border-emerald-500/30",
   },
   finished: {
     label: "Finalizada",
-    className: "bg-slate-100 text-slate-600 border-slate-200",
+    className: "bg-slate-850 text-slate-400 border-slate-700",
   },
   upcoming: {
     label: "Próxima",
-    className: "bg-sky-50 text-sky-700 border-sky-200",
+    className: "bg-sky-500/10 text-sky-400 border-sky-500/30",
   },
 };
 
@@ -28,7 +27,6 @@ export function RoundSelector({
   rounds,
   activeRound,
   onSelectRound,
-  tvMode = false,
 }: RoundSelectorProps) {
   if (rounds.length === 0) return null;
 
@@ -38,16 +36,12 @@ export function RoundSelector({
 
     return (
       <div className="flex items-center">
-        <div
-          className={`inline-flex items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 shadow-xs ${
-            tvMode ? "text-base" : "text-sm"
-          }`}
-        >
-          <span className="font-semibold text-slate-900">
+        <div className="inline-flex items-center gap-2.5 rounded-xl border border-[#1E293B] bg-[#111827] px-4 py-2 text-sm shadow-sm">
+          <span className="font-semibold text-[#F8FAFC]">
             {onlyRound.event_name} — {onlyRound.name}
           </span>
           <span
-            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${badge.className}`}
+            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${badge.className}`}
           >
             {badge.label}
           </span>
@@ -73,12 +67,10 @@ export function RoundSelector({
             role="tab"
             aria-selected={isActive}
             onClick={() => onSelectRound(round.id)}
-            className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 transition-colors cursor-pointer ${
-              tvMode ? "text-base" : "text-sm"
-            } ${
+            className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm transition-all cursor-pointer ${
               isActive
-                ? "border-blue-600 bg-white text-slate-900 ring-1 ring-blue-600/20 shadow-xs font-semibold"
-                : "border-slate-200 bg-white/70 text-slate-600 hover:bg-white hover:border-slate-300 hover:text-slate-900 font-medium"
+                ? "border-[#F59E0B] bg-[#1E293B] text-[#F8FAFC] font-semibold shadow-md ring-1 ring-[#F59E0B]/30"
+                : "border-[#1E293B] bg-[#111827] text-[#94A3B8] hover:text-[#F8FAFC] hover:border-slate-700 font-medium"
             }`}
           >
             <span>
