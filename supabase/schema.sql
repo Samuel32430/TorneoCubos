@@ -131,6 +131,7 @@ drop policy if exists "round_results_delete_authenticated" on public.round_resul
 create policy "round_results_delete_authenticated"
   on public.round_results for delete to authenticated using (true);
 
+alter table public.tournaments replica identity full;
 alter table public.rounds replica identity full;
 alter table public.competitors replica identity full;
 alter table public.round_results replica identity full;
@@ -140,7 +141,7 @@ declare
   tbl text;
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-    foreach tbl in array array['rounds', 'competitors', 'round_results']
+    foreach tbl in array array['tournaments', 'rounds', 'competitors', 'round_results']
     loop
       if not exists (
         select 1
