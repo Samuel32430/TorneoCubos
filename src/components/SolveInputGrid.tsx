@@ -358,13 +358,13 @@ export function SolveInputGrid({
 
         <div className="flex items-center gap-2">
           {saveFeedback && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-[#10B981]">
               <CheckCircle2 className="h-3.5 w-3.5" />
               {saveFeedback}
             </span>
           )}
           {isDirty && !saveFeedback && (
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-[#F59E0B]">
               Cambios sin guardar
             </span>
           )}
@@ -385,16 +385,16 @@ export function SolveInputGrid({
             return (
               <div
                 key={index}
-                className={`flex flex-col gap-2.5 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between ${
+                className={`flex flex-col gap-2.5 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between ${
                   hasError
                     ? "border-red-300 bg-red-50/40"
-                    : "border-slate-200 bg-slate-50/50"
+                    : "border-[#CBD5E1] bg-[#F8FAFC]"
                 }`}
               >
                 <div className="flex flex-1 items-center gap-3">
                   <label
                     htmlFor={`solve-input-${index}`}
-                    className="w-20 shrink-0 text-sm font-medium text-slate-700"
+                    className="w-20 shrink-0 text-sm font-semibold text-[#0F172A]"
                   >
                     Intento {index + 1}
                   </label>
@@ -412,10 +412,10 @@ export function SolveInputGrid({
                     onChange={(e) => handleTextChange(index, e.target.value)}
                     onKeyDown={(e) => handleInputKeyDown(e, index)}
                     placeholder={placeholder}
-                    className="w-full max-w-[200px] rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-base text-slate-900 placeholder:font-sans placeholder:text-xs placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                    className="w-full max-w-[200px] rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 font-mono text-base font-semibold text-[#0F172A] placeholder:font-sans placeholder:text-xs placeholder:text-[#64748B]/60 focus:border-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#0F172A]/10"
                   />
 
-                  <div className="min-w-[84px] rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-center">
+                  <div className="min-w-[84px] rounded-xl border border-[#CBD5E1] bg-white px-2.5 py-1.5 text-center">
                     {renderSlotPreview(index)}
                   </div>
                 </div>
@@ -425,10 +425,10 @@ export function SolveInputGrid({
                     type="button"
                     disabled={slot.rawCs === null}
                     onClick={() => handleTogglePenalty(index, "+2")}
-                    className={`rounded-lg border px-3 py-1.5 font-mono text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                    className={`rounded-xl border px-3 py-1.5 font-mono text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                       slot.penalty === "+2"
-                        ? "border-amber-500 bg-amber-500 text-white"
-                        : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                        ? "border-[#EA580C] bg-[#EA580C] text-white"
+                        : "border-[#CBD5E1] bg-white text-[#64748B] hover:border-[#EA580C] hover:text-[#EA580C]"
                     }`}
                   >
                     +2
@@ -437,10 +437,10 @@ export function SolveInputGrid({
                   <button
                     type="button"
                     onClick={() => handleTogglePenalty(index, "DNF")}
-                    className={`rounded-lg border px-3 py-1.5 font-mono text-xs font-semibold transition-colors ${
+                    className={`rounded-xl border px-3 py-1.5 font-mono text-xs font-bold transition-colors ${
                       slot.penalty === "DNF"
-                        ? "border-red-600 bg-red-600 text-white"
-                        : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                        ? "border-[#EF4444] bg-[#EF4444] text-white"
+                        : "border-[#CBD5E1] bg-white text-[#64748B] hover:border-[#EF4444] hover:text-[#EF4444]"
                     }`}
                   >
                     DNF
@@ -449,10 +449,10 @@ export function SolveInputGrid({
                   <button
                     type="button"
                     onClick={() => handleTogglePenalty(index, "DNS")}
-                    className={`rounded-lg border px-3 py-1.5 font-mono text-xs font-semibold transition-colors ${
+                    className={`rounded-xl border px-3 py-1.5 font-mono text-xs font-bold transition-colors ${
                       slot.penalty === "DNS"
-                        ? "border-slate-800 bg-slate-800 text-white"
-                        : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+                        ? "border-[#0F172A] bg-[#0F172A] text-white"
+                        : "border-[#CBD5E1] bg-white text-[#64748B] hover:border-[#0F172A] hover:text-[#0F172A]"
                     }`}
                   >
                     DNS
@@ -462,7 +462,7 @@ export function SolveInputGrid({
                     type="button"
                     onClick={() => handleClearSlot(index)}
                     title={`Limpiar intento ${index + 1}`}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    className="inline-flex items-center gap-1 rounded-xl border border-[#CBD5E1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#64748B] hover:bg-slate-100 hover:text-[#0F172A]"
                   >
                     <Eraser className="h-3.5 w-3.5" />
                     Limpiar
@@ -473,9 +473,9 @@ export function SolveInputGrid({
           })}
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
               Resumen en vivo ({summary.completedCount}/5)
             </span>
             <div className="flex flex-wrap items-center gap-2">
@@ -486,10 +486,10 @@ export function SolveInputGrid({
                 return (
                   <span
                     key={index}
-                    className={`rounded-md border px-2 py-0.5 font-mono text-xs ${
+                    className={`rounded-lg border px-2 py-0.5 font-mono text-xs ${
                       isDropped
-                        ? "border-slate-200 bg-slate-100 text-slate-400"
-                        : "border-slate-300 bg-white font-semibold text-slate-900"
+                        ? "border-[#CBD5E1] bg-white text-[#64748B]/50 line-through"
+                        : "border-[#CBD5E1] bg-white font-bold text-[#0F172A]"
                     }`}
                   >
                     {formatSolveSlot(slot, isDropped)}
@@ -500,32 +500,32 @@ export function SolveInputGrid({
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-              <p className="text-xs text-slate-500">Mejor (Best)</p>
-              <p className="mt-0.5 font-mono text-lg font-semibold text-slate-900">
+            <div className="rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 shadow-xs">
+              <p className="text-xs font-semibold text-[#64748B]">Mejor (Best)</p>
+              <p className="mt-0.5 font-mono text-lg font-bold text-[#0F172A]">
                 {formatCentiseconds(summary.bestCs)}
               </p>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-              <p className="text-xs text-slate-500">Ao5</p>
-              <p className="mt-0.5 font-mono text-lg font-bold text-slate-900">
+            <div className="rounded-xl border border-[#CBD5E1] bg-white px-3 py-2 shadow-xs">
+              <p className="text-xs font-semibold text-[#64748B]">Ao5</p>
+              <p className="mt-0.5 font-mono text-lg font-bold text-[#0F172A]">
                 {formatCentiseconds(summary.averageCs)}
               </p>
             </div>
 
             {summary.completedCount === 4 && (
               <>
-                <div className="rounded-lg border border-blue-200 bg-blue-50/60 px-3 py-2">
-                  <p className="text-xs text-blue-700">BPA</p>
-                  <p className="mt-0.5 font-mono text-lg font-semibold text-blue-900">
+                <div className="rounded-xl border border-blue-200 bg-blue-50/60 px-3 py-2 shadow-xs">
+                  <p className="text-xs font-semibold text-blue-700">BPA (Mejor caso)</p>
+                  <p className="mt-0.5 font-mono text-lg font-bold text-blue-900">
                     {formatCentiseconds(summary.bpaCs)}
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2">
-                  <p className="text-xs text-amber-700">WPA</p>
-                  <p className="mt-0.5 font-mono text-lg font-semibold text-amber-900">
+                <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 shadow-xs">
+                  <p className="text-xs font-semibold text-[#F59E0B]">WPA (Peor caso)</p>
+                  <p className="mt-0.5 font-mono text-lg font-bold text-[#B45309]">
                     {formatCentiseconds(summary.wpaCs)}
                   </p>
                 </div>
@@ -537,23 +537,23 @@ export function SolveInputGrid({
         {errorMessage && (
           <p
             role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-[#EF4444]"
           >
             {errorMessage}
           </p>
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-          <p className="text-xs text-slate-500">
-            Pulsa <kbd className="rounded border border-slate-300 bg-slate-100 px-1.5 py-0.5 font-mono text-[11px]">Enter</kbd> para pasar al siguiente intento o{" "}
-            <kbd className="rounded border border-slate-300 bg-slate-100 px-1.5 py-0.5 font-mono text-[11px]">Ctrl+S</kbd> para guardar.
+          <p className="text-xs text-[#64748B]">
+            Pulsa <kbd className="rounded-lg border border-[#CBD5E1] bg-white px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#0F172A]">Enter</kbd> para avanzar o{" "}
+            <kbd className="rounded-lg border border-[#CBD5E1] bg-white px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#0F172A]">Ctrl+S</kbd> para guardar.
           </p>
 
           <button
             ref={saveButtonRef}
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#0F172A] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 shadow-xs"
           >
             <Save className="h-4 w-4" />
             {saving ? "Guardando..." : "Guardar resultados"}

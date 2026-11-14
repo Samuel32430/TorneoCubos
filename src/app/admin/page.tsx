@@ -7,7 +7,6 @@ import {
   Calendar,
   ExternalLink,
   LogOut,
-  Monitor,
   Trophy,
   UserCheck,
 } from "lucide-react";
@@ -312,6 +311,10 @@ export default function AdminPage() {
     setResults((prev) => prev.filter((row) => row.competitor_id !== competitorId));
   }
 
+  function handleRoundResultDeleted(competitorId: string) {
+    setResults((prev) => prev.filter((row) => row.competitor_id !== competitorId));
+  }
+
   const handleResultSaved = useCallback((savedRow: RoundResultRow) => {
     setResults((prev) => {
       const exists = prev.some(
@@ -477,14 +480,6 @@ export default function AdminPage() {
               Marcador en vivo (/)
             </Link>
 
-            <Link
-              href="/tv"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-            >
-              <Monitor className="h-4 w-4" />
-              Modo TV (/tv)
-            </Link>
-
             <button
               type="button"
               onClick={handleSignOut}
@@ -528,6 +523,7 @@ export default function AdminPage() {
             }
             onCompetitorAdded={handleCompetitorAdded}
             onCompetitorDeleted={handleCompetitorDeleted}
+            onRoundResultDeleted={handleRoundResultDeleted}
           />
 
           <div>
