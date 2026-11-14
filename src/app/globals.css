@@ -17,3 +17,10 @@
 .animate-row-flash {
   animation: rowFlash 2.4s ease-out;
 }
+
+/* Ocultar indicador de desarrollo de Next.js (icono con la "N") */
+nextjs-portal,
+#nextjs-dev-tools,
+[data-nextjs-dev-indicator] {
+  display: none !important;
+}
