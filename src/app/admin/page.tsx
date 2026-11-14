@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -589,8 +590,14 @@ export default function AdminPage() {
 
           <div className="rounded-2xl border border-[#CBD5E1] bg-white p-8 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F172A] text-[#F59E0B]">
-                <Trophy className="h-6 w-6" />
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] p-1.5 shadow-xs ring-1 ring-white/10 overflow-hidden">
+                <Image
+                  src="/conquis-logo.png"
+                  alt="Club Conquistadores"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-[#0F172A]">
@@ -665,8 +672,14 @@ export default function AdminPage() {
           {/* Selector y Gestión de Torneos */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0F172A] text-[#F59E0B]">
-                <Trophy className="h-5 w-5" />
+              <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] p-1 shadow-xs ring-1 ring-white/10 overflow-hidden">
+                <Image
+                  src="/conquis-logo.png"
+                  alt="Club Conquistadores"
+                  width={32}
+                  height={32}
+                  className="h-full w-full object-contain"
+                />
               </div>
 
               <div className="relative">

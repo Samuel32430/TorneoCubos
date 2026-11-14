@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { FileText, Moon, Search, Sun, Trophy } from "lucide-react";
 import { PodiumCards } from "@/components/PodiumCards";
 import { RoundSelector } from "@/components/RoundSelector";
@@ -255,19 +256,31 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
         {/* Cabecera oficial del torneo con selector de tema */}
         <header className={`rounded-2xl border px-5 py-4 shadow-sm transition-colors ${isDark ? "border-[#1E293B] bg-[#111827]" : "border-[#CBD5E1] bg-white"}`}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className={`text-xl font-bold tracking-tight sm:text-2xl ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
-                  {currentTournament.name}
-                </h1>
-                <ConnectionBadge status={connectionStatus} isDark={isDark} />
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] p-1.5 shadow-xs ring-1 ring-white/10 overflow-hidden">
+                <Image
+                  src="/conquis-logo.png"
+                  alt="Club Conquistadores"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-contain"
+                  priority
+                />
               </div>
-              <p className={`mt-1 text-sm ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
-                {formatEventDate(currentTournament.event_date)}
-                {activeRound
-                  ? ` · ${activeRound.event_name} — ${activeRound.name}`
-                  : " · Sin rondas activas"}
-              </p>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className={`text-xl font-bold tracking-tight sm:text-2xl ${isDark ? "text-[#F8FAFC]" : "text-[#0F172A]"}`}>
+                    {currentTournament.name}
+                  </h1>
+                  <ConnectionBadge status={connectionStatus} isDark={isDark} />
+                </div>
+                <p className={`mt-1 text-sm ${isDark ? "text-[#94A3B8]" : "text-[#64748B]"}`}>
+                  {formatEventDate(currentTournament.event_date)}
+                  {activeRound
+                    ? ` · ${activeRound.event_name} — ${activeRound.name}`
+                    : " · Sin rondas activas"}
+                </p>
+              </div>
             </div>
 
             {/* Alternar Tema Claro / Oscuro */}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Calendar,
@@ -10,7 +11,6 @@ import {
   Moon,
   Search,
   Sun,
-  Trophy,
   Users,
 } from "lucide-react";
 import type { ConnectionStatus } from "@/hooks/useLiveRoundResults";
@@ -186,8 +186,15 @@ export function UpcomingTournamentView({
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] text-[#F59E0B] shadow-xs">
-                <Trophy className="h-6 w-6" />
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] p-1.5 shadow-xs ring-1 ring-white/10 overflow-hidden">
+                <Image
+                  src="/conquis-logo.png"
+                  alt="Club Conquistadores"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-contain"
+                  priority
+                />
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -474,7 +481,7 @@ export function UpcomingTournamentView({
                     isDark ? "text-[#94A3B8]" : "text-[#64748B]"
                   }`}
                 >
-                  Verifica tu nombre en la lista oficial antes del inicio del torneo.
+                  Verifica tu nombre en la lista de participantes.
                 </p>
               </div>
             </div>
