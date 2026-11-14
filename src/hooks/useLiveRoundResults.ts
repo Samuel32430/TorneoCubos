@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient, hasSupabaseEnv } from "@/lib/supabase/client";
 import { normalizeSolves } from "@/lib/wca";
-import type { Competitor, Round, RoundResultRow } from "@/types/tournament";
+import type { Competitor, Round, RoundResultRow, Tournament } from "@/types/tournament";
 
 export type ConnectionStatus = "connecting" | "live" | "offline";
 
 export interface UseLiveRoundResultsParams {
   tournamentId: string | null;
+  initialTournament?: Tournament | null;
   initialRound: Round | null;
   initialRounds: Round[];
   initialCompetitors: Competitor[];
@@ -17,6 +18,7 @@ export interface UseLiveRoundResultsParams {
 }
 
 export interface UseLiveRoundResultsReturn {
+  tournament: Tournament | null;
   rounds: Round[];
   activeRound: Round | null;
   setActiveRoundId: (roundId: string) => void;
@@ -58,11 +60,13 @@ function removeById<T extends { id: string }>(list: T[], id: string | undefined)
 
 export function useLiveRoundResults({
   tournamentId,
+  initialTournament,
   initialRound,
   initialRounds,
   initialCompetitors,
   initialResults,
 }: UseLiveRoundResultsParams): UseLiveRoundResultsReturn {
+  const [tournament, setTournament] = useState<Tournament | null>(() => initialTournament ?? null);
   const [rounds, setRounds] = useState<Round[]>(() => sortRounds(initialRounds));
   const [activeRoundId, setActiveRoundId] = useState<string | null>(
     () => initialRound?.id ?? initialRounds[0]?.id ?? null
@@ -79,6 +83,18 @@ export function useLiveRoundResults({
   const [lastUpdatedCompetitorId, setLastUpdatedCompetitorId] = useState<string | null>(
     null
   );
+
+  useEffect(() => {
+    if (initialTournament) {
+      setTournament(initialTournament);
+    }
+  }, [initialTournament]);
+
+  useEffect(() => {
+    if (initialCompetitors && initialCompetitors.length > 0) {
+      setCompetitors(sortCompetitors(initialCompetitors));
+    }
+  }, [initialCompetitors]);
 
   const loadedRoundIdRef = useRef<string | null>(initialRound?.id ?? null);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -152,8 +168,26 @@ export function useLiveRoundResults({
         {
           event: "*",
           schema: "public",
+          table: "tournaments",
+        },
+        (payload: RealtimePostgresChangesPayload<Tournament>) => {
+          if (cancelled) return;
+          if (payload.eventType === "DELETE") {
+            if (payload.old?.id === tournamentId) setTournament(null);
+            return;
+          }
+          const updated = payload.new as Tournament;
+          if (updated && updated.id === tournamentId) {
+            setTournament(updated);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
           table: "competitors",
-          filter: `tournament_id=eq.${tournamentId}`,
         },
         (payload: RealtimePostgresChangesPayload<Competitor>) => {
           if (cancelled) return;
@@ -162,7 +196,9 @@ export function useLiveRoundResults({
             return;
           }
           const updated = payload.new as Competitor;
-          setCompetitors((prev) => sortCompetitors(upsertById(prev, updated)));
+          if (updated && updated.tournament_id === tournamentId) {
+            setCompetitors((prev) => sortCompetitors(upsertById(prev, updated)));
+          }
         }
       )
       .on(
@@ -171,7 +207,6 @@ export function useLiveRoundResults({
           event: "*",
           schema: "public",
           table: "rounds",
-          filter: `tournament_id=eq.${tournamentId}`,
         },
         (payload: RealtimePostgresChangesPayload<Round>) => {
           if (cancelled) return;
@@ -180,7 +215,9 @@ export function useLiveRoundResults({
             return;
           }
           const updated = payload.new as Round;
-          setRounds((prev) => sortRounds(upsertById(prev, updated)));
+          if (updated && updated.tournament_id === tournamentId) {
+            setRounds((prev) => sortRounds(upsertById(prev, updated)));
+          }
         }
       );
 
@@ -226,21 +263,61 @@ export function useLiveRoundResults({
     };
   }, [tournamentId, resolvedRoundId, triggerRowFlash]);
 
-  useEffect(() => {
-    function handleVisibilityOrOnline() {
-      if (document.visibilityState === "visible" && resolvedRoundId) {
-        const supabase = getSupabaseBrowserClient();
-        if (!supabase) return;
+  // Sincronización completa como respaldo activo ante cualquier desconexión
+  const syncAll = useCallback(async () => {
+    if (!tournamentId) return;
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
 
-        void supabase
+    try {
+      const [tRes, cRes, rRes] = await Promise.all([
+        supabase.from("tournaments").select("*").eq("id", tournamentId).maybeSingle(),
+        supabase
+          .from("competitors")
+          .select("*")
+          .eq("tournament_id", tournamentId)
+          .order("bib_number", { ascending: true }),
+        supabase
+          .from("rounds")
+          .select("*")
+          .eq("tournament_id", tournamentId)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+      ]);
+
+      if (!tRes.error && tRes.data) {
+        setTournament(tRes.data as Tournament);
+      }
+      if (!cRes.error && cRes.data) {
+        setCompetitors(sortCompetitors((cRes.data as Competitor[]) ?? []));
+      }
+      if (!rRes.error && rRes.data) {
+        setRounds(sortRounds((rRes.data as Round[]) ?? []));
+      }
+
+      if (resolvedRoundId) {
+        const resultsRes = await supabase
           .from("round_results")
           .select("*")
-          .eq("round_id", resolvedRoundId)
-          .then(({ data, error }) => {
-            if (!error && data) {
-              setResults((data as RoundResultRow[]).map(normalizeResultRow));
-            }
-          });
+          .eq("round_id", resolvedRoundId);
+        if (!resultsRes.error && resultsRes.data) {
+          setResults((resultsRes.data as RoundResultRow[]).map(normalizeResultRow));
+        }
+      }
+    } catch {
+      // Ignorar errores transitorios de red en el sondeo en segundo plano
+    }
+  }, [tournamentId, resolvedRoundId]);
+
+  // Sondeo continuo (cada 2.5s) y sincronización al enfocar o volver a estar online
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void syncAll();
+    }, 2500);
+
+    function handleVisibilityOrOnline() {
+      if (document.visibilityState === "visible") {
+        void syncAll();
       }
     }
 
@@ -248,12 +325,30 @@ export function useLiveRoundResults({
     window.addEventListener("online", handleVisibilityOrOnline);
 
     return () => {
+      clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityOrOnline);
       window.removeEventListener("online", handleVisibilityOrOnline);
     };
-  }, [resolvedRoundId]);
+  }, [syncAll]);
+
+  // Sincronización instantánea entre pestañas abiertas en el mismo navegador (BroadcastChannel)
+  useEffect(() => {
+    if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+    const bc = new BroadcastChannel("torneo_cubo_sync");
+    bc.onmessage = (event) => {
+      if (event.data?.tournament && event.data.tournament.id === tournamentId) {
+        setTournament(event.data.tournament as Tournament);
+      }
+      void syncAll();
+    };
+
+    return () => {
+      bc.close();
+    };
+  }, [tournamentId, syncAll]);
 
   return {
+    tournament,
     rounds,
     activeRound,
     setActiveRoundId: selectRound,

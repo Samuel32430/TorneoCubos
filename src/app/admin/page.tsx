@@ -1,15 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Calendar,
   Check,
   ChevronDown,
+  Clock,
   Edit,
   ExternalLink,
   LogOut,
+  Play,
   Plus,
   Trash2,
   Trophy,
@@ -47,6 +50,15 @@ function getTodayDateString(): string {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function notifySyncTabs(type: string, data?: unknown) {
+  if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+  try {
+    const bc = new BroadcastChannel("torneo_cubo_sync");
+    bc.postMessage({ type, data });
+    bc.close();
+  } catch {}
 }
 
 export default function AdminPage() {
@@ -364,7 +376,34 @@ export default function AdminPage() {
     setAllTournaments((prev) =>
       prev.map((t) => (t.id === updated.id ? updated : t))
     );
+    notifySyncTabs("TOURNAMENT_UPDATED", updated);
     setShowEditModal(false);
+  }
+
+  // Cambio rápido del estado del torneo (Borrador <-> Activo <-> Finalizado)
+  async function handleQuickStatusChange(nextStatus: TournamentStatus) {
+    if (!tournament) return;
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return;
+
+    const { data, error } = await supabase
+      .from("tournaments")
+      .update({ status: nextStatus })
+      .eq("id", tournament.id)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      setLoadError(`No se pudo actualizar el estado del torneo: ${error?.message ?? "Error desconocido"}`);
+      return;
+    }
+
+    const updated = data as Tournament;
+    setTournament(updated);
+    setAllTournaments((prev) =>
+      prev.map((t) => (t.id === updated.id ? updated : t))
+    );
+    notifySyncTabs("TOURNAMENT_UPDATED", updated);
   }
 
   // Eliminar torneo actual
@@ -413,12 +452,14 @@ export default function AdminPage() {
     );
     setSelectedRoundId(round.id);
     setResults([]);
+    notifySyncTabs("ROUND_CREATED", round);
   }
 
   function handleRoundUpdated(updated: Round) {
     setRounds((prev) =>
       prev.map((round) => (round.id === updated.id ? updated : round))
     );
+    notifySyncTabs("ROUND_UPDATED", updated);
   }
 
   function handleRoundDeleted(roundId: string) {
@@ -435,6 +476,7 @@ export default function AdminPage() {
       }
       return next;
     });
+    notifySyncTabs("ROUND_DELETED", roundId);
   }
 
   function handleCompetitorAdded(competitor: Competitor) {
@@ -442,6 +484,7 @@ export default function AdminPage() {
       [...prev, competitor].sort((a, b) => a.bib_number - b.bib_number)
     );
     setSelectedCompetitorId((prevId) => prevId ?? competitor.id);
+    notifySyncTabs("COMPETITOR_ADDED", competitor);
   }
 
   function handleCompetitorDeleted(competitorId: string) {
@@ -454,10 +497,12 @@ export default function AdminPage() {
       return next;
     });
     setResults((prev) => prev.filter((row) => row.competitor_id !== competitorId));
+    notifySyncTabs("COMPETITOR_DELETED", competitorId);
   }
 
   function handleRoundResultDeleted(competitorId: string) {
     setResults((prev) => prev.filter((row) => row.competitor_id !== competitorId));
+    notifySyncTabs("RESULT_DELETED", competitorId);
   }
 
   const handleResultSaved = useCallback((savedRow: RoundResultRow) => {
@@ -475,6 +520,7 @@ export default function AdminPage() {
       }
       return [...prev, savedRow];
     });
+    notifySyncTabs("RESULT_SAVED", savedRow);
   }, []);
 
   const activeRound = useMemo(
@@ -544,8 +590,14 @@ export default function AdminPage() {
 
           <div className="rounded-2xl border border-[#CBD5E1] bg-white p-8 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F172A] text-[#F59E0B]">
-                <Trophy className="h-6 w-6" />
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl p-0.5 overflow-hidden">
+                <Image
+                  src="/conquis-logo.png"
+                  alt="Club Conquistadores"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-contain"
+                />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-[#0F172A]">
@@ -620,8 +672,14 @@ export default function AdminPage() {
           {/* Selector y Gestión de Torneos */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0F172A] text-[#F59E0B]">
-                <Trophy className="h-5 w-5" />
+              <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl p-0.5 overflow-hidden">
+                <Image
+                  src="/conquis-logo.png"
+                  alt="Club Conquistadores"
+                  width={32}
+                  height={32}
+                  className="h-full w-full object-contain"
+                />
               </div>
 
               <div className="relative">
@@ -678,6 +736,63 @@ export default function AdminPage() {
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
+              )}
+            </div>
+
+            {/* Estado del torneo y acción rápida */}
+            <div className="flex items-center gap-2 pl-1 sm:border-l sm:border-[#CBD5E1] sm:pl-3">
+              {tournament.status === "draft" && (
+                <>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-[#B45309]">
+                    <Clock className="h-3 w-3" />
+                    Borrador (Próximamente)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStatusChange("active")}
+                    title="Iniciar el torneo y pasar al marcador en vivo para el público"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors"
+                  >
+                    <Play className="h-3 w-3 fill-current" />
+                    Iniciar Torneo
+                  </button>
+                </>
+              )}
+
+              {tournament.status === "active" && (
+                <>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    </span>
+                    En Vivo
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStatusChange("finished")}
+                    title="Marcar el torneo como finalizado"
+                    className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-[#64748B] hover:bg-slate-100 transition-colors"
+                  >
+                    Finalizar
+                  </button>
+                </>
+              )}
+
+              {tournament.status === "finished" && (
+                <>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-[#64748B]">
+                    🏁 Finalizado
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickStatusChange("active")}
+                    title="Reactivar el torneo en vivo"
+                    className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  >
+                    Reactivar
+                  </button>
+                </>
               )}
             </div>
           </div>
