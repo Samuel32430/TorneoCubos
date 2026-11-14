@@ -127,7 +127,7 @@ export default function LoginPage() {
               Panel de Jueces
             </h1>
             <p className="text-xs text-[#64748B]">
-              Acceso privado para captura de tiempos y torneos
+              Ingresa con tu correo y contraseña para acceder al panel de jueces.
             </p>
           </div>
         </div>

@@ -51,6 +51,15 @@ function getTodayDateString(): string {
   return `${year}-${month}-${day}`;
 }
 
+function notifySyncTabs(type: string, data?: unknown) {
+  if (typeof window === "undefined" || !("BroadcastChannel" in window)) return;
+  try {
+    const bc = new BroadcastChannel("torneo_cubo_sync");
+    bc.postMessage({ type, data });
+    bc.close();
+  } catch {}
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const envConfigured = hasSupabaseEnv();
@@ -366,6 +375,7 @@ export default function AdminPage() {
     setAllTournaments((prev) =>
       prev.map((t) => (t.id === updated.id ? updated : t))
     );
+    notifySyncTabs("TOURNAMENT_UPDATED", updated);
     setShowEditModal(false);
   }
 
@@ -392,6 +402,7 @@ export default function AdminPage() {
     setAllTournaments((prev) =>
       prev.map((t) => (t.id === updated.id ? updated : t))
     );
+    notifySyncTabs("TOURNAMENT_UPDATED", updated);
   }
 
   // Eliminar torneo actual
@@ -440,12 +451,14 @@ export default function AdminPage() {
     );
     setSelectedRoundId(round.id);
     setResults([]);
+    notifySyncTabs("ROUND_CREATED", round);
   }
 
   function handleRoundUpdated(updated: Round) {
     setRounds((prev) =>
       prev.map((round) => (round.id === updated.id ? updated : round))
     );
+    notifySyncTabs("ROUND_UPDATED", updated);
   }
 
   function handleRoundDeleted(roundId: string) {
@@ -462,6 +475,7 @@ export default function AdminPage() {
       }
       return next;
     });
+    notifySyncTabs("ROUND_DELETED", roundId);
   }
 
   function handleCompetitorAdded(competitor: Competitor) {
@@ -469,6 +483,7 @@ export default function AdminPage() {
       [...prev, competitor].sort((a, b) => a.bib_number - b.bib_number)
     );
     setSelectedCompetitorId((prevId) => prevId ?? competitor.id);
+    notifySyncTabs("COMPETITOR_ADDED", competitor);
   }
 
   function handleCompetitorDeleted(competitorId: string) {
@@ -481,10 +496,12 @@ export default function AdminPage() {
       return next;
     });
     setResults((prev) => prev.filter((row) => row.competitor_id !== competitorId));
+    notifySyncTabs("COMPETITOR_DELETED", competitorId);
   }
 
   function handleRoundResultDeleted(competitorId: string) {
     setResults((prev) => prev.filter((row) => row.competitor_id !== competitorId));
+    notifySyncTabs("RESULT_DELETED", competitorId);
   }
 
   const handleResultSaved = useCallback((savedRow: RoundResultRow) => {
@@ -502,6 +519,7 @@ export default function AdminPage() {
       }
       return [...prev, savedRow];
     });
+    notifySyncTabs("RESULT_SAVED", savedRow);
   }, []);
 
   const activeRound = useMemo(
