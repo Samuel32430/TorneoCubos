@@ -25,7 +25,7 @@ create table if not exists public.competitors (
   tournament_id uuid not null references public.tournaments(id) on delete cascade,
   bib_number integer not null,
   full_name text not null,
-  wca_id text,
+  club text,
   created_at timestamptz not null default now(),
   unique (tournament_id, bib_number)
 );

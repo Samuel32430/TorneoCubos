@@ -97,8 +97,8 @@ export function PodiumCards({ rows }: PodiumCardsProps) {
               <p className="truncate font-semibold text-[#F8FAFC] text-base">
                 {row.competitor.full_name}
               </p>
-              {row.competitor.wca_id && (
-                <p className="text-xs text-[#94A3B8] font-medium">{row.competitor.wca_id}</p>
+              {row.competitor.club && (
+                <p className="text-xs text-[#94A3B8] font-medium">{row.competitor.club}</p>
               )}
             </div>
 

@@ -150,7 +150,7 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
       const bibMatch = String(row.competitor.bib_number).includes(query);
       const nameMatch = row.competitor.full_name.toLowerCase().includes(query);
       const clubMatch =
-        row.competitor.wca_id?.toLowerCase().includes(query) ?? false;
+        row.competitor.club?.toLowerCase().includes(query) ?? false;
       return bibMatch || nameMatch || clubMatch;
     });
   }, [leaderboard, searchQuery]);
@@ -403,9 +403,9 @@ export function LiveScoreboard({ snapshot }: LiveScoreboardProps) {
                                 #{row.competitor.bib_number}
                               </span>
                             </div>
-                            {row.competitor.wca_id && (
+                            {row.competitor.club && (
                               <span className="block text-xs text-[#94A3B8] font-medium">
-                                {row.competitor.wca_id}
+                                {row.competitor.club}
                               </span>
                             )}
                           </td>

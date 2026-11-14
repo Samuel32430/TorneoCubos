@@ -31,7 +31,7 @@ export function CompetitorManager({
   onRoundResultDeleted,
 }: CompetitorManagerProps) {
   const [fullName, setFullName] = useState("");
-  const [wcaId, setWcaId] = useState("");
+  const [club, setClub] = useState("");
   const [customBib, setCustomBib] = useState("");
   const [bibEdited, setBibEdited] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,8 +64,8 @@ export function CompetitorManager({
     return competitors.filter((competitor) => {
       const bibMatch = String(competitor.bib_number).includes(query);
       const nameMatch = competitor.full_name.toLowerCase().includes(query);
-      const wcaMatch = competitor.wca_id?.toLowerCase().includes(query) ?? false;
-      return bibMatch || nameMatch || wcaMatch;
+      const clubMatch = competitor.club?.toLowerCase().includes(query) ?? false;
+      return bibMatch || nameMatch || clubMatch;
     });
   }, [competitors, searchQuery]);
 
@@ -76,7 +76,7 @@ export function CompetitorManager({
 
     const trimmedName = fullName.trim();
     const parsedBib = Number.parseInt(bibValue, 10);
-    const normalizedWcaId = wcaId.trim().toUpperCase();
+    const normalizedClub = club.trim();
 
     if (!trimmedName) {
       setErrorMessage("Ingresa el nombre del competidor.");
@@ -97,7 +97,7 @@ export function CompetitorManager({
         tournament_id: tournamentId,
         full_name: trimmedName,
         bib_number: parsedBib,
-        wca_id: normalizedWcaId || null,
+        club: normalizedClub || null,
       })
       .select("*")
       .single();
@@ -114,7 +114,7 @@ export function CompetitorManager({
     }
 
     setFullName("");
-    setWcaId("");
+    setClub("");
     setCustomBib("");
     setBibEdited(false);
     onCompetitorAdded(data as Competitor);
@@ -313,16 +313,16 @@ export function CompetitorManager({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
               <div className="flex-1">
                 <label
-                  htmlFor="competitor-wca"
+                  htmlFor="competitor-club"
                   className="block text-xs font-semibold text-[#64748B]"
                 >
                   Club
                 </label>
                 <input
-                  id="competitor-wca"
+                  id="competitor-club"
                   type="text"
-                  value={wcaId}
-                  onChange={(e) => setWcaId(e.target.value)}
+                  value={club}
+                  onChange={(e) => setClub(e.target.value)}
                   placeholder="Ej. Orion Speedcubing"
                   className="mt-1 block w-full rounded-xl border border-[#CBD5E1] bg-white px-2.5 py-1.5 text-sm text-[#0F172A] placeholder:text-[#64748B]/60 focus:border-[#0F172A] focus:ring-1 focus:ring-[#0F172A] focus:outline-none"
                 />
@@ -397,9 +397,9 @@ export function CompetitorManager({
                         <p className="truncate text-sm font-semibold text-[#0F172A]">
                           {competitor.full_name}
                         </p>
-                        {competitor.wca_id && (
+                        {competitor.club && (
                           <p className="text-xs text-[#64748B] font-medium">
-                            {competitor.wca_id}
+                            {competitor.club}
                           </p>
                         )}
                       </div>

@@ -345,9 +345,9 @@ export function SolveInputGrid({
             <h2 className="text-lg font-semibold text-slate-900">
               {competitor.full_name}
             </h2>
-            {competitor.wca_id && (
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
-                {competitor.wca_id}
+            {competitor.club && (
+              <span className="rounded-lg bg-[#F1F5F9] px-2 py-0.5 text-xs font-semibold text-[#64748B]">
+                {competitor.club}
               </span>
             )}
           </div>

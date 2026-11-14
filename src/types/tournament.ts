@@ -42,7 +42,7 @@ export interface Competitor {
   tournament_id: string;
   bib_number: number;
   full_name: string;
-  wca_id: string | null;
+  club: string | null;
   created_at: string;
 }
 

@@ -20,7 +20,7 @@ function makeCompetitor(id: string, bib: number, fullName: string): Competitor {
     tournament_id: "t-1",
     bib_number: bib,
     full_name: fullName,
-    wca_id: null,
+    club: null,
     created_at: "2026-01-01T00:00:00Z",
   };
 }
